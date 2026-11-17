@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArtFlow Studio — Digital Artist Pipeline & Art Vault</title>
+  
+  <!-- Google Fonts: Inter & Noto Sans Thai -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans Thai"', 'sans-serif'],
+          },
+          colors: {
+            obsidian: {
+              950: '#090a0f',
+              900: '#0d0f14',
+              850: '#12151d',
+              800: '#161922',
+              750: '#1d212d',
+              700: '#262b38',
+            },
+            studio: {
+              violet: '#7c5cff',
+              violetHover: '#6a48f5',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+              cyan: '#06b6d4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Smooth Theme & UI Transitions */
+    body {
+      font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Custom Studio Scrollbars */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #262b38;
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #384054;
+    }
+    html:not(.dark) ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Kanban Drag & Drop Highlight */
+    .kanban-column.drag-over {
+      border-color: #7c5cff !important;
+      background-color: rgba(124, 92, 255, 0.08) !important;
+    }
+
+    /* Subtle Pulse for Active Timer */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.15); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.9; }
+    }
+    .timer-dot {
+      animation: pulse-ring 1.6s infinite ease-in-out;
+    }
+
+    /* Modal Backdrop Animation */
+    .modal-backdrop {
+      animation: fadeIn 0.18s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-[#f6f7fb] text-slate-900 dark:bg-obsidian-900 dark:text-slate-100 min-h-screen flex flex-col selection:bg-studio-violet selection:text-white">
+
+  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <header class="sticky top-0 z-40 border-b border-slate-200/80 dark:border-obsidian-700 bg-white/85 dark:bg-obsidian-900/85 backdrop-blur-md">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-studio-violet to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-studio-violet/25 shrink-0">
+          <!-- Custom Pen Nib & Node Icon -->
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+            <path d="M2 2l7.586 7.586"></path>
+            <circle cx="11" cy="11" r="2"></circle>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg tracking-tight leading-none">ArtFlow <span class="text-studio-violet">Studio</span></h1>
+            <span id="modeBadge" class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-studio-violet/15 text-studio-violet border border-studio-violet/30">Workspace</span>
+            <!-- Real-time Storage Status Indicator -->
+            <span id="saveStatusPill" class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-studio-emerald/15 text-studio-emerald border border-studio-emerald/30 transition-all" title="สถานะการบันทึกข้อมูลในเบราว์เซอร์">
+              <span id="saveStatusDot" class="w-1.5 h-1.5 rounded-full bg-studio-emerald"></span>
+              <span id="saveStatusText">Saved to Browser</span>
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">Art Vault & Production Pipeline</p>
+        </div>
+      </div>
+
+      <!-- Center Navigation Tabs (Visible in Workspace Mode) -->
+      <nav id="workspaceNavTabs" class="flex items-center bg-slate-100 dark:bg-obsidian-800 p-1 rounded-xl border border-slate-200/70 dark:border-obsidian-700 order-3 lg:order-2 w-full lg:w-auto justify-center">
+        <button onclick="switchWorkspaceTab('vault')" id="tab-vault" class="flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white dark:bg-obsidian-750 text-slate-900 dark:text-white shadow-sm">
+          <svg class="w-4 h-4 text-studio-violet" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span>คลังผลงาน <span class="hidden sm:inline opacity-75 font-normal">(Art Vault)</span></span>
+        </button>
+        <button onclick="switchWorkspaceTab('pipeline')" id="tab-pipeline" class="flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">
+          <svg class="w-4 h-4 text-studio-emerald" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>ตารางงาน & ไปป์ไลน์ <span class="hidden sm:inline opacity-75 font-normal">(Schedule)</span></span>
+        </button>
+      </nav>
+
+      <!-- Right Controls: Mode Switcher, Theme Toggle, Backup, Create CTA -->
+      <div class="flex items-center gap-2 order-2 lg:order-3">
+        
+        <!-- Active Timer Mini Pill (Shown when timer is running) -->
+        <div id="headerTimerPill" class="hidden items-center gap-2 px-3 py-1.5 rounded-xl bg-studio-emerald/15 border border-studio-emerald/30 text-studio-emerald text-xs font-semibold cursor-pointer" onclick="openActiveTimerInspector()" title="คลิกเพื่อดูงานที่กำลังจับเวลา">
+          <span class="w-2 h-2 rounded-full bg-studio-emerald timer-dot"></span>
+          <span id="headerTimerText" class="font-mono">00:00:00</span>
+        </div>
+
+        <!-- Workspace / Public Portfolio Switcher -->
+        <button onclick="toggleAppMode()" id="appModeToggleBtn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-800 hover:border-studio-violet/50 transition-all" title="สลับระหว่างพื้นที่ทำงานส่วนตัว และหน้าโชว์ผลงานสาธารณะ">
+          <svg id="appModeIcon" class="w-4 h-4 text-studio-violet" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span id="appModeLabel" class="hidden sm:inline">Portfolio Preview</span>
+        </button>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button onclick="toggleTheme()" id="themeToggleBtn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-800 hover:bg-slate-50 dark:hover:bg-obsidian-750 transition-all" title="สลับธีมมืด / ธีมสว่าง">
+          <!-- Sun icon (shown in dark mode to switch to light) -->
+          <svg id="iconSun" class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <!-- Moon icon (shown in light mode to switch to dark) -->
+          <svg id="iconMoon" class="w-4 h-4 text-studio-violet hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <span id="themeLabel" class="hidden md:inline">Light</span>
+        </button>
+
+        <!-- Data Backup & Restore Button -->
+        <button onclick="openBackupModal()" id="backupBtn" class="p-2 rounded-xl border border-slate-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-800 text-slate-600 dark:text-slate-300 hover:border-studio-violet/50 transition-all" title="สำรองข้อมูล Export / Import JSON">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+
+        <!-- Create New Artwork / Task CTA -->
+        <button onclick="openCreateModal()" id="createArtworkBtn" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-studio-violet hover:bg-studio-violetHover text-white shadow-md shadow-studio-violet/25 transition-all active:scale-95">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>สร้างงานใหม่</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sandbox / Restricted Storage Warning Banner (Shown only if IndexedDB & localStorage are blocked) -->
+    <div id="sandboxWarningBanner" class="hidden bg-amber-500/15 border-t border-amber-500/30 px-4 sm:px-6 py-2">
+      <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-2 text-xs text-amber-700 dark:text-amber-300">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span><strong>คำเตือนโหมดชั่วคราว (Sandbox / Incognito):</strong> เบราว์เซอร์หรือ Iframe นี้บล็อกการบันทึกข้อมูลถาวร กรุณากดสำรองไฟล์ JSON ก่อนปิดหน้าเว็บ</span>
+        </div>
+        <button onclick="exportDataJson()" class="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors shrink-0">
+          Export JSON ทันที
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== WORKSPACE CONTAINER ==================== -->
+  <main id="workspaceContainer" class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
+    
+    <!-- Studio Quick Metrics Bar -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div class="p-4 rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">ผลงานทั้งหมด (Total Assets)</p>
+          <p id="statTotal" class="text-2xl font-bold mt-1">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-studio-violet/10 text-studio-violet flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">กำลังผลิต (In Pipeline)</p>
+          <p id="statInProgress" class="text-2xl font-bold mt-1 text-amber-500">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">เผยแพร่พอร์ต (Public)</p>
+          <p id="statPublic" class="text-2xl font-bold mt-1 text-studio-emerald">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-studio-emerald/10 text-studio-emerald flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">ชั่วโมงทำงานสะสม (Logged)</p>
+          <p id="statHours" class="text-2xl font-bold mt-1 text-cyan-500">0.0h</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 1: SMART ART VAULT ==================== -->
+    <section id="view-vault" class="space-y-5">
+      
+      <!-- Filter & Search Control Panel -->
+      <div class="p-4 rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 space-y-4">
+        <div class="flex flex-col md:flex-row gap-3">
+          <!-- Search Bar -->
+          <div class="relative flex-1">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="vaultSearchInput" oninput="renderVault()" placeholder="ค้นหาชื่องาน, ชื่อตัวละคร, โปรเจกต์, แท็ก หรือ Path ไฟล์..." class="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet transition-colors" />
+          </div>
+
+          <!-- Dropdown Filters -->
+          <div class="grid grid-cols-2 sm:flex gap-2.5">
+            <select id="filterProject" onchange="renderVault()" class="px-3 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet">
+              <option value="ALL">ทุกโปรเจกต์ (All Projects)</option>
+            </select>
+
+            <select id="filterCategory" onchange="renderVault()" class="px-3 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet">
+              <option value="ALL">ทุกหมวดหมู่ (All Categories)</option>
+              <option value="Character Design">Character Design</option>
+              <option value="2D Animation">2D Animation</option>
+              <option value="3D Model / Rig">3D Model / Rig</option>
+              <option value="Illustration / Manga">Illustration / Manga</option>
+              <option value="Background / Concept">Background / Concept</option>
+            </select>
+
+            <select id="filterVisibility" onchange="renderVault()" class="col-span-2 sm:col-span-1 px-3 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet">
+              <option value="ALL">สถานะเผยแพร่ทั้งหมด</option>
+              <option value="PUBLIC">Public (พอร์ตสาธารณะ)</option>
+              <option value="PRIVATE">Private (ส่วนตัวเท่านั้น)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Software Quick Filter Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1">
+          <span class="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0 mr-1">ซอฟต์แวร์:</span>
+          <div id="softwareFilterPills" class="flex items-center gap-1.5">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Art Vault Gallery Grid -->
+      <div id="vaultGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="vaultEmptyState" class="hidden py-16 text-center rounded-2xl bg-white dark:bg-obsidian-800 border border-dashed border-slate-300 dark:border-obsidian-700">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-studio-violet/10 text-studio-violet flex items-center justify-center mb-3">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <h3 class="text-base font-semibold">ไม่พบผลงานที่ตรงกับตัวกรอง</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">ลองล้างคำค้นหาหรือเพิ่มชิ้นงานใหม่เข้าสู่คลังของคุณ</p>
+        <button onclick="resetVaultFilters()" class="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-obsidian-750 hover:bg-slate-200 dark:hover:bg-obsidian-700 transition-colors">ล้างตัวกรองทั้งหมด</button>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: PIPELINE & SCHEDULE ==================== -->
+    <section id="view-pipeline" class="hidden space-y-5">
+      
+      <!-- Sub-Navigation Switcher: Kanban vs Visual Calendar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700">
+        <div>
+          <h2 class="text-base font-bold">สายผลิตและตารางส่งงาน (Production Pipeline)</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">ลากการ์ดเพื่อเปลี่ยนขั้นตอนงาน จับเวลาทำงานจริง หรือดูภาพรวมเดดไลน์บนปฏิทิน</p>
+        </div>
+
+        <div class="flex items-center bg-slate-100 dark:bg-obsidian-900 p-1 rounded-xl border border-slate-200 dark:border-obsidian-700 self-start sm:self-auto">
+          <button onclick="switchPipelineSubView('kanban')" id="subtab-kanban" class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-obsidian-750 text-slate-900 dark:text-white shadow-sm transition-all">
+            <svg class="w-4 h-4 text-studio-violet" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="4" height="15" rx="1"/></svg>
+            <span>Kanban Board</span>
+          </button>
+          <button onclick="switchPipelineSubView('calendar')" id="subtab-calendar" class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">
+            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Visual Calendar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sub-view A: Art Pipeline Kanban Board -->
+      <div id="kanbanView" class="overflow-x-auto pb-4">
+        <div id="kanbanBoardGrid" class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 min-w-[300px]">
+          <!-- 5 Pipeline Columns Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Sub-view B: Visual Deadline Calendar -->
+      <div id="calendarView" class="hidden rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 overflow-hidden">
+        <!-- Calendar Header -->
+        <div class="p-4 border-b border-slate-200 dark:border-obsidian-700 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <button onclick="changeCalendarMonth(-1)" class="p-2 rounded-xl border border-slate-200 dark:border-obsidian-700 hover:bg-slate-100 dark:hover:bg-obsidian-750 transition-colors" title="เดือนก่อนหน้า">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h3 id="calendarMonthTitle" class="text-base sm:text-lg font-bold min-w-[190px] text-center">พฤศจิกายน 2026</h3>
+            <button onclick="changeCalendarMonth(1)" class="p-2 rounded-xl border border-slate-200 dark:border-obsidian-700 hover:bg-slate-100 dark:hover:bg-obsidian-750 transition-colors" title="เดือนถัดไป">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button onclick="goCalendarToday()" class="ml-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-obsidian-750 hover:bg-slate-200 dark:hover:bg-obsidian-700 transition-colors">วันนี้ (Today)</button>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-studio-violet"></span> กำลังทำ</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-studio-emerald"></span> เสร็จสมบูรณ์</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> เลยกำหนด</span>
+          </div>
+        </div>
+
+        <!-- Day of Week Headers -->
+        <div class="grid grid-cols-7 bg-slate-50 dark:bg-obsidian-850 border-b border-slate-200 dark:border-obsidian-700 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 py-2.5">
+          <div class="text-rose-500">อา / SUN</div>
+          <div>จ / MON</div>
+          <div>อ / TUE</div>
+          <div>พ / WED</div>
+          <div>พฤ / THU</div>
+          <div>ศ / FRI</div>
+          <div class="text-indigo-400">ส / SAT</div>
+        </div>
+
+        <!-- Calendar Days Grid -->
+        <div id="calendarDaysGrid" class="grid grid-cols-7 divide-x divide-y divide-slate-200/70 dark:divide-obsidian-700">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ==================== PUBLIC PORTFOLIO PREVIEW CONTAINER ==================== -->
+  <main id="portfolioContainer" class="hidden flex-1 max-w-[1360px] w-full mx-auto px-4 sm:px-6 py-8">
+    <!-- Artist Hero Showcase Banner -->
+    <div class="relative rounded-3xl overflow-hidden bg-gradient-to-br from-obsidian-800 via-obsidian-850 to-indigo-950 text-white p-6 sm:p-10 mb-8 border border-obsidian-700 shadow-xl">
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-3 max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-studio-emerald/20 border border-studio-emerald/40 text-emerald-300 text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Open for Studio Projects & Commissions</span>
+          </div>
+          <h2 id="portfolioArtistName" class="text-2xl sm:text-4xl font-extrabold tracking-tight">ArtFlow Creator Studio</h2>
+          <p id="portfolioArtistBio" class="text-sm sm:text-base text-slate-300 leading-relaxed">
+            Character Designer • 2D Animator • 3D Hard-Surface & Technical Artist — คลังรวบรวมผลงานคัดสรร พร้อมเบื้องหลังขั้นตอนการออกแบบ (WIP Breakdown)
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 shrink-0">
+          <button onclick="copyPortfolioLink()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 text-xs sm:text-sm font-bold shadow-lg transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>คัดลอกลิงก์ Portfolio</span>
+          </button>
+          <button onclick="toggleAppMode()" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs sm:text-sm font-semibold transition-all">
+            กลับสู่โหมดทำงาน (Workspace)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Public Category Filter Pills -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div id="portfolioCategoryPills" class="flex flex-wrap items-center gap-2">
+        <!-- Populated by JS -->
+      </div>
+      <p id="portfolioCountText" class="text-xs text-slate-500 dark:text-slate-400">แสดงผลงานสาธารณะ 0 ชิ้น</p>
+    </div>
+
+    <!-- Public Gallery Grid -->
+    <div id="portfolioGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Populated by JS -->
+    </div>
+  </main>
+
+  <!-- ==================== MODAL 1: CREATE NEW ARTWORK / TASK ==================== -->
+  <div id="createModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="sticky top-0 z-10 px-6 py-4 bg-white/95 dark:bg-obsidian-800/95 backdrop-blur border-b border-slate-200 dark:border-obsidian-700 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold">สร้างชิ้นงาน / ตารางงานใหม่</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">ข้อมูลจะซิงก์เข้าทั้งคลังผลงาน (Art Vault) และสายผลิต (Pipeline) อัตโนมัติ</p>
+        </div>
+        <button onclick="closeCreateModal()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-obsidian-750 text-slate-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="createArtworkForm" onsubmit="handleCreateArtwork(event)" class="p-6 space-y-5">
+        <!-- Image Upload / Preview Box -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center p-4 rounded-2xl bg-slate-50 dark:bg-obsidian-900 border border-dashed border-slate-300 dark:border-obsidian-700">
+          <div class="sm:col-span-5 aspect-[16/10] rounded-xl overflow-hidden bg-slate-200 dark:bg-obsidian-800 flex items-center justify-center relative">
+            <img id="createPreviewImg" src="" alt="Preview" class="hidden w-full h-full object-cover" />
+            <div id="createPreviewPlaceholder" class="text-center p-3">
+              <svg class="w-8 h-8 mx-auto text-slate-400 mb-1" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <p class="text-[11px] text-slate-500">อัปโหลดภาพพรีวิว<br>(บีบอัดอัตโนมัติ)</p>
+            </div>
+          </div>
+
+          <div class="sm:col-span-7 space-y-2.5">
+            <label class="block">
+              <span class="text-xs font-semibold block mb-1">อัปโหลดไฟล์ภาพ (PNG, JPG, WebP)</span>
+              <input type="file" id="createImageFile" accept="image/*" onchange="handleCreateImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-studio-violet file:text-white hover:file:bg-studio-violetHover cursor-pointer" />
+            </label>
+            <div>
+              <span class="text-[11px] text-slate-500 block mb-1">หรือวางลิงก์รูปภาพ (Image URL) — หากเว้นว่างระบบจะสร้างการ์ดงานเปล่าให้ก่อน</span>
+              <input type="url" id="createImageUrl" oninput="handleCreateImageUrlInput(this.value)" placeholder="https://..." class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Title & Project -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">ชื่อผลงาน / ชื่องาน (Title) *</label>
+            <input type="text" id="createTitle" required placeholder="เช่น Kaito Character Turnaround v2" class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">ชื่อโปรเจกต์ (Project)</label>
+            <input type="text" id="createProject" list="projectSuggestions" placeholder="เช่น Cyber Ronin Series" class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+            <datalist id="projectSuggestions"></datalist>
+          </div>
+        </div>
+
+        <!-- Category, Pipeline Stage, Deadline -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">หมวดหมู่งาน (Category)</label>
+            <select id="createCategory" class="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet">
+              <option value="Character Design">Character Design</option>
+              <option value="2D Animation">2D Animation</option>
+              <option value="3D Model / Rig">3D Model / Rig</option>
+              <option value="Illustration / Manga">Illustration / Manga</option>
+              <option value="Background / Concept">Background / Concept</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">ขั้นตอนปัจจุบัน (Stage)</label>
+            <select id="createStage" class="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet">
+              <option value="Idea / Brief">Idea / Brief</option>
+              <option value="Sketch / Blocking">Sketch / Blocking</option>
+              <option value="Line / Modeling">Line / Modeling</option>
+              <option value="Color / Shading">Color / Shading</option>
+              <option value="Compositing / Done">Compositing / Done</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">กำหนดส่ง (Deadline)</label>
+            <input type="date" id="createDeadline" class="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+          </div>
+        </div>
+
+        <!-- Software Multi-Select Checkboxes -->
+        <div>
+          <label class="block text-xs font-semibold mb-2">ซอฟต์แวร์ที่ใช้ผลิต (Software)</label>
+          <div id="createSoftwareCheckboxes" class="flex flex-wrap gap-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Source File Path / Cloud Link -->
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">ที่เก็บไฟล์ต้นฉบับในเครื่อง / ลิงก์ Cloud (Source File Path)</label>
+          <input type="text" id="createSourcePath" placeholder="เช่น D:\ArtStudio\Projects\CyberRonin\Kaito_Main_v03.clip หรือ Google Drive URL" class="w-full px-3.5 py-2.5 rounded-xl text-xs font-mono bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+        </div>
+
+        <!-- Tags & Notes -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">แท็กตัวละคร / คีย์เวิร์ด (คั่นด้วยจุลภาค)</label>
+            <input type="text" id="createTags" placeholder="เช่น Kaito, Cyberpunk, Katana, Turnaround" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">การมองเห็น (Visibility)</label>
+            <select id="createVisibility" class="w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet">
+              <option value="false">Private (เก็บไว้ในพื้นที่ทำงานส่วนตัว)</option>
+              <option value="true">Public (แสดงในหน้า Public Portfolio)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">บันทึกช่วยจำ / บรีฟงาน (Production Notes)</label>
+          <textarea id="createNotes" rows="2" placeholder="รายละเอียดแสงสี มุมกล้อง หรือสิ่งที่ต้องแก้ไข..." class="w-full px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet"></textarea>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-obsidian-700">
+          <button type="button" onclick="closeCreateModal()" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-obsidian-750 hover:bg-slate-200 dark:hover:bg-obsidian-700 transition-colors">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-studio-violet hover:bg-studio-violetHover text-white shadow-lg shadow-studio-violet/25 transition-all">บันทึกชิ้นงาน</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: ARTWORK INSPECTOR & VERSION HISTORY ==================== -->
+  <div id="inspectorModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 modal-backdrop">
+    <div class="bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700 rounded-3xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
+      
+      <!-- Inspector Header -->
+      <div class="px-5 sm:px-6 py-4 border-b border-slate-200 dark:border-obsidian-700 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <span id="inspStageBadge" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-studio-violet/15 text-studio-violet shrink-0">Stage</span>
+          <h3 id="inspHeaderTitle" class="text-base sm:text-lg font-bold truncate">Artwork Title</h3>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Live Timer Toggle inside Inspector -->
+          <button id="inspTimerBtn" onclick="toggleInspectorTimer()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-obsidian-700 hover:border-studio-emerald transition-all">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="inspTimerLabel">00:00:00</span>
+          </button>
+          <button onclick="closeInspectorModal()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-obsidian-750 text-slate-500">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Inspector Body (2 Columns on Desktop) -->
+      <div class="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-obsidian-700">
+        
+        <!-- Left Column: Visual Preview, Version History & Color Palette -->
+        <div class="lg:col-span-7 p-5 sm:p-6 space-y-5 bg-slate-50/50 dark:bg-obsidian-850/50">
+          <!-- Main Stage Viewport -->
+          <div class="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-obsidian-700 aspect-[16/10] flex items-center justify-center group">
+            <img id="inspActiveImg" src="" alt="Artwork Preview" class="w-full h-full object-contain" />
+            <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-black/70 backdrop-blur-md text-white text-xs">
+              <span id="inspVersionCaption" class="font-medium truncate">v1 — Initial Stage</span>
+              <span id="inspVersionDate" class="text-[11px] text-slate-300 shrink-0"></span>
+            </div>
+          </div>
+
+          <!-- Extracted Auto Color Palette -->
+          <div class="p-4 rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700">
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-xs font-bold flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-studio-violet" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                <span>จานสีอัตโนมัติ (Auto Color Palette — คลิกเพื่อคัดลอก Hex)</span>
+              </span>
+            </div>
+            <div id="inspPaletteSwatches" class="flex flex-wrap gap-2">
+              <!-- Swatches populated by JS -->
+            </div>
+          </div>
+
+          <!-- Version History (WIP Steps) Timeline -->
+          <div class="p-4 rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold">ประวัติขั้นตอนภาพ (Version History / WIP Steps)</span>
+              <button type="button" onclick="toggleAddVersionBox()" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-studio-violet/15 text-studio-violet hover:bg-studio-violet hover:text-white transition-colors">
+                + เพิ่มเวอร์ชันภาพ
+              </button>
+            </div>
+
+            <!-- Add New WIP Version Form (Hidden by default) -->
+            <div id="addVersionBox" class="hidden p-3.5 rounded-xl bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label class="text-[11px] font-semibold block mb-1">ชื่อขั้นตอน (เช่น Lineart, Final Render)</label>
+                  <input type="text" id="newVerLabel" placeholder="เช่น Base Color & Lighting" class="w-full px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700" />
+                </div>
+                <div>
+                  <label class="text-[11px] font-semibold block mb-1">เลือกไฟล์ภาพเวอร์ชันใหม่ *</label>
+                  <input type="file" id="newVerFile" accept="image/*" class="w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-studio-violet file:text-white cursor-pointer" />
+                </div>
+              </div>
+              <input type="text" id="newVerNote" placeholder="บันทึกการแก้ไขในเวอร์ชันนี้..." class="w-full px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700" />
+              <div class="flex justify-end gap-2">
+                <button type="button" onclick="toggleAddVersionBox()" class="px-3 py-1.5 rounded-lg text-xs bg-slate-200 dark:bg-obsidian-750">ยกเลิก</button>
+                <button type="button" onclick="handleAddVersion()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-studio-violet text-white">บันทึกเวอร์ชัน</button>
+              </div>
+            </div>
+
+            <!-- Version Thumbnails List -->
+            <div id="inspVersionsList" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Metadata, Source File Path & Controls -->
+        <div class="lg:col-span-5 p-5 sm:p-6 space-y-4">
+          
+          <!-- Source File Path Copy Box -->
+          <div class="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300">ไฟล์ต้นฉบับ (Source File Path / Cloud)</span>
+              <button type="button" onclick="copyInspectorSourcePath()" class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-studio-violet text-white hover:bg-studio-violetHover transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>Copy Path</span>
+              </button>
+            </div>
+            <input type="text" id="inspSourcePath" class="w-full px-3 py-2 rounded-xl text-xs font-mono bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" placeholder="ระบุ Path ในเครื่องหรือลิงก์ Google Drive..." />
+          </div>
+
+          <!-- Editable Metadata Fields -->
+          <div>
+            <label class="block text-xs font-semibold mb-1">ชื่อผลงาน (Title)</label>
+            <input type="text" id="inspTitle" class="w-full px-3.5 py-2 rounded-xl text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1">โปรเจกต์ (Project)</label>
+              <input type="text" id="inspProject" class="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1">หมวดหมู่ (Category)</label>
+              <select id="inspCategory" class="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet">
+                <option value="Character Design">Character Design</option>
+                <option value="2D Animation">2D Animation</option>
+                <option value="3D Model / Rig">3D Model / Rig</option>
+                <option value="Illustration / Manga">Illustration / Manga</option>
+                <option value="Background / Concept">Background / Concept</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1">ขั้นตอนงาน (Pipeline Stage)</label>
+              <select id="inspStage" class="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet">
+                <option value="Idea / Brief">Idea / Brief</option>
+                <option value="Sketch / Blocking">Sketch / Blocking</option>
+                <option value="Line / Modeling">Line / Modeling</option>
+                <option value="Color / Shading">Color / Shading</option>
+                <option value="Compositing / Done">Compositing / Done</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1">กำหนดส่ง (Deadline)</label>
+              <input type="date" id="inspDeadline" class="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+            </div>
+          </div>
+
+          <!-- Software Selection -->
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">ซอฟต์แวร์ที่ใช้</label>
+            <div id="inspSoftwareCheckboxes" class="flex flex-wrap gap-1.5">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div>
+            <label class="block text-xs font-semibold mb-1">แท็ก (คั่นด้วยจุลภาค)</label>
+            <input type="text" id="inspTags" class="w-full px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet" />
+          </div>
+
+          <!-- Visibility Switch -->
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700">
+            <div>
+              <p class="text-xs font-bold">แสดงในหน้า Public Portfolio</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">เปิดสวิตช์เพื่อให้ผลงานแสดงในโหมดโชว์พอร์ต</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="inspIsPublic" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-obsidian-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-studio-emerald"></div>
+            </label>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label class="block text-xs font-semibold mb-1">บันทึกช่วยจำ (Notes)</label>
+            <textarea id="inspNotes" rows="2" class="w-full px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 focus:outline-none focus:border-studio-violet"></textarea>
+          </div>
+
+          <!-- Save & Delete Actions -->
+          <div class="pt-3 border-t border-slate-200 dark:border-obsidian-700 flex items-center justify-between gap-2">
+            <div id="deleteConfirmWrapper">
+              <button type="button" onclick="promptDeleteArtwork()" class="px-3 py-2 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-500/10 transition-colors">ลบผลงานนี้</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="closeInspectorModal()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-obsidian-750">ปิด</button>
+              <button type="button" onclick="saveInspectorChanges()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-studio-violet hover:bg-studio-violetHover text-white shadow-md shadow-studio-violet/25">บันทึกการแก้ไข</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: PUBLIC PORTFOLIO LIGHTBOX ==================== -->
+  <div id="portfolioLightboxModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700 rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-obsidian-700 flex items-center justify-between">
+        <div>
+          <span id="lbCategory" class="text-[11px] font-bold uppercase tracking-wider text-studio-violet">Category</span>
+          <h3 id="lbTitle" class="text-lg sm:text-xl font-bold">Artwork Title</h3>
+        </div>
+        <button onclick="closePortfolioLightbox()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-obsidian-750">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-5">
+        <div class="rounded-2xl overflow-hidden bg-obsidian-950 aspect-[16/10] flex items-center justify-center">
+          <img id="lbActiveImg" src="" alt="Showcase" class="w-full h-full object-contain" />
+        </div>
+
+        <!-- WIP Breakdown Switcher (Shown if artwork has multiple versions) -->
+        <div id="lbWipSection" class="hidden p-4 rounded-2xl bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700">
+          <p class="text-xs font-bold mb-2.5">เบื้องหลังขั้นตอนการสร้าง (Process Breakdown)</p>
+          <div id="lbWipButtons" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <p class="text-xs text-slate-500 dark:text-slate-400">โปรเจกต์: <span id="lbProject" class="font-semibold text-slate-900 dark:text-white"></span></p>
+            <p id="lbNotes" class="text-sm text-slate-600 dark:text-slate-300"></p>
+            <div id="lbSoftwareBadges" class="flex flex-wrap gap-1.5 pt-2"></div>
+          </div>
+          <div id="lbPalette" class="flex items-center gap-1.5 shrink-0"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4: DATA BACKUP & MANAGEMENT ==================== -->
+  <div id="backupModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">จัดการและสำรองข้อมูล (Data Backup)</h3>
+        <button onclick="closeBackupModal()" class="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-obsidian-750">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 space-y-2">
+        <div class="flex justify-between text-xs font-semibold">
+          <span id="storageEngineLabel">ฐานข้อมูลเบราว์เซอร์ (IndexedDB Persistent)</span>
+          <span id="storageUsageText">0 KB</span>
+        </div>
+        <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-obsidian-700 overflow-hidden">
+          <div id="storageUsageBar" class="h-full bg-studio-emerald rounded-full transition-all" style="width: 8%"></div>
+        </div>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400">รองรับการจัดเก็บรูปภาพพรีวิวและประวัติ WIP ความจุสูง พร้อมระบบจดจำข้อมูลถาวรเมื่อรันบน GitHub Pages</p>
+      </div>
+
+      <div class="space-y-2.5">
+        <button onclick="exportDataJson()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs sm:text-sm font-semibold bg-studio-violet hover:bg-studio-violetHover text-white transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>ดาวน์โหลดไฟล์สำรองข้อมูล (Export JSON)</span>
+        </button>
+
+        <label class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-obsidian-750 hover:bg-slate-200 dark:hover:bg-obsidian-700 cursor-pointer transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>นำเข้าข้อมูลจากไฟล์ (Import JSON)</span>
+          <input type="file" accept=".json" onchange="importDataJson(event)" class="hidden" />
+        </label>
+
+        <div id="resetDataWrapper" class="pt-2">
+          <button onclick="promptResetSampleData()" class="w-full px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-500 border border-rose-500/30 hover:bg-rose-500/10 transition-colors">
+            Reset Demo — ดึงข้อมูลตัวอย่างเริ่มต้นกลับมาใหม่
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ==================== APPLICATION JAVASCRIPT ==================== -->
+  <script>
+    // -------------------- 1. CONSTANTS & STATE --------------------
+    const LEGACY_STORAGE_KEY = 'artflow_studio_data_v1';
+    const INIT_FLAG_KEY = 'artflow_initialized';
+    const THEME_KEY = 'artflow_studio_theme_v1';
+    const IDB_NAME = 'ArtFlowStudioDB';
+    const IDB_VERSION = 1;
+    const IDB_STORE = 'studio_kv';
+
+    const PIPELINE_STAGES = [
+      { id: 'Idea / Brief', label: 'Idea / Brief', color: 'slate', dot: 'bg-slate-400' },
+      { id: 'Sketch / Blocking', label: 'Sketch / Blocking', color: 'amber', dot: 'bg-amber-400' },
+      { id: 'Line / Modeling', label: 'Line / Modeling', color: 'cyan', dot: 'bg-cyan-400' },
+      { id: 'Color / Shading', label: 'Color / Shading', color: 'violet', dot: 'bg-studio-violet' },
+      { id: 'Compositing / Done', label: 'Compositing / Done', color: 'emerald', dot: 'bg-studio-emerald' }
+    ];
+
+    const SOFTWARE_LIST = ['CSP', 'Blender', 'After Effects', 'Photoshop', 'Premiere Pro'];
+
+    let state = {
+      artworks: [],
+      appMode: 'workspace', // 'workspace' | 'portfolio'
+      workspaceTab: 'vault', // 'vault' | 'pipeline'
+      pipelineSubView: 'kanban', // 'kanban' | 'calendar'
+      selectedSoftware: 'ALL',
+      portfolioCategory: 'ALL',
+      calendarDate: new Date(),
+      activeTimerArtworkId: null,
+      inspectorArtworkId: null,
+      inspectorVersionIndex: 0,
+      tempCreateImage: '',
+      tempCreatePalette: [],
+      storageBackend: 'indexeddb', // 'indexeddb' | 'localstorage' | 'memory'
+      memoryFallback: {}
+    };
+
+    // -------------------- 1.5 PERSISTENT INDEXEDDB & FALLBACK ENGINE --------------------
+    function openStudioDB() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          return reject(new Error('IndexedDB not supported'));
+        }
+        try {
+          const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+          req.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(IDB_STORE)) {
+              db.createObjectStore(IDB_STORE);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error || new Error('IndexedDB open error'));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
+    async function dbGet(key) {
+      if (state.storageBackend === 'indexeddb') {
+        try {
+          const db = await openStudioDB();
+          return await new Promise((resolve, reject) => {
+            const tx = db.transaction(IDB_STORE, 'readonly');
+            const store = tx.objectStore(IDB_STORE);
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+        } catch (err) {
+          // Fallback to localStorage if IndexedDB fails
+          state.storageBackend = 'localstorage';
+        }
+      }
+
+      if (state.storageBackend === 'localstorage') {
+        try {
+          const raw = localStorage.getItem('artflow_idb_fallback_' + key);
+          return raw !== null ? JSON.parse(raw) : undefined;
+        } catch (err) {
+          state.storageBackend = 'memory';
+        }
+      }
+
+      return state.memoryFallback[key];
+    }
+
+    async function dbSet(key, value) {
+      if (state.storageBackend === 'indexeddb') {
+        try {
+          const db = await openStudioDB();
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(IDB_STORE, 'readwrite');
+            const store = tx.objectStore(IDB_STORE);
+            const req = store.put(value, key);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+          });
+          // Mirror lightweight initialized flag to localStorage as extra safety
+          if (key === INIT_FLAG_KEY) {
+            try { localStorage.setItem(INIT_FLAG_KEY, JSON.stringify(value)); } catch (e) {}
+          }
+          return true;
+        } catch (err) {
+          state.storageBackend = 'localstorage';
+        }
+      }
+
+      if (state.storageBackend === 'localstorage') {
+        try {
+          localStorage.setItem('artflow_idb_fallback_' + key, JSON.stringify(value));
+          if (key === INIT_FLAG_KEY) {
+            localStorage.setItem(INIT_FLAG_KEY, JSON.stringify(value));
+          }
+          return true;
+        } catch (err) {
+          state.storageBackend = 'memory';
+        }
+      }
+
+      state.memoryFallback[key] = value;
+      return false;
+    }
+
+    function updateSaveStatusUI(status) {
+      const pill = document.getElementById('saveStatusPill');
+      const dot = document.getElementById('saveStatusDot');
+      const text = document.getElementById('saveStatusText');
+      const banner = document.getElementById('sandboxWarningBanner');
+      if (!pill || !dot || !text) return;
+
+      pill.classList.remove('hidden');
+      pill.classList.add('inline-flex');
+
+      if (status === 'saving') {
+        pill.className = 'inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-studio-violet/15 text-studio-violet border border-studio-violet/30 transition-all';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-studio-violet animate-pulse';
+        text.textContent = 'Saving...';
+      } else if (state.storageBackend === 'memory') {
+        pill.className = 'inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 transition-all';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
+        text.textContent = 'Sandbox (Unsaved)';
+        if (banner) banner.classList.remove('hidden');
+      } else {
+        pill.className = 'inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-studio-emerald/15 text-studio-emerald border border-studio-emerald/30 transition-all';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-studio-emerald';
+        text.textContent = state.storageBackend === 'indexeddb' ? 'Saved to Browser' : 'Saved (Local)';
+        if (banner) banner.classList.add('hidden');
+      }
+    }
+
+    // -------------------- 2. PROCEDURAL STUDIO ART GENERATOR (FOR STARTER DATA) --------------------
+    // Generates crisp, offline-ready studio artwork previews via HTML5 Canvas without external URLs
+    function generateProceduralArt(preset) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 500;
+      const ctx = canvas.getContext('2d');
+
+      if (preset === 'cyber_ronin') {
+        const grad = ctx.createLinearGradient(0, 0, 800, 500);
+        grad.addColorStop(0, '#0f0c29');
+        grad.addColorStop(0.5, '#302b63');
+        grad.addColorStop(1, '#24243e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 500);
+
+        // Neon sun ring
+        ctx.strokeStyle = '#ff2a85';
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.arc(400, 230, 140, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Character silhouette & cyber visor
+        ctx.fillStyle = '#090a0f';
+        ctx.beginPath();
+        ctx.moveTo(270, 500);
+        ctx.lineTo(340, 210);
+        ctx.lineTo(400, 175);
+        ctx.lineTo(460, 210);
+        ctx.lineTo(530, 500);
+        ctx.closePath();
+        ctx.fill();
+
+        // Glowing cyan visor
+        ctx.fillStyle = '#00f5d4';
+        ctx.fillRect(365, 215, 70, 12);
+
+        // Katana slash accent
+        ctx.strokeStyle = '#7c5cff';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(160, 410);
+        ctx.lineTo(650, 110);
+        ctx.stroke();
+
+        // Turnaround grid UI lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.lineWidth = 1;
+        for (let x = 50; x < 800; x += 50) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 500); ctx.stroke();
+        }
+      } else if (preset === 'mecha_3d') {
+        const grad = ctx.createRadialGradient(400, 250, 40, 400, 250, 450);
+        grad.addColorStop(0, '#1e293b');
+        grad.addColorStop(1, '#090d16');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 500);
+
+        // Studio turntable rings
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(400, 400, 230, 55, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Geometric 3D Mecha Core
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.moveTo(400, 100);
+        ctx.lineTo(520, 190);
+        ctx.lineTo(490, 350);
+        ctx.lineTo(310, 350);
+        ctx.lineTo(280, 190);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Glowing Amber Core
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(400, 230, 38, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (preset === 'anime_train') {
+        const grad = ctx.createLinearGradient(0, 0, 0, 500);
+        grad.addColorStop(0, '#0b132b');
+        grad.addColorStop(0.6, '#1c2541');
+        grad.addColorStop(1, '#3a506b');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 500);
+
+        // Stars
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 45; i++) {
+          ctx.fillRect((i * 173) % 800, (i * 97) % 300, 2.5, 2.5);
+        }
+
+        // Viaduct Bridge
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 330, 800, 170);
+
+        // Glowing Train Windows
+        ctx.fillStyle = '#fde047';
+        for (let wx = 80; wx < 720; wx += 48) {
+          ctx.fillRect(wx, 295, 32, 18);
+        }
+        // Motion streak
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.fillRect(0, 318, 800, 6);
+      } else if (preset === 'sunken_ruins') {
+        const grad = ctx.createLinearGradient(0, 0, 800, 500);
+        grad.addColorStop(0, '#064e3b');
+        grad.addColorStop(0.5, '#0f766e');
+        grad.addColorStop(1, '#115e59');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 500);
+
+        // God rays
+        ctx.fillStyle = 'rgba(167, 243, 208, 0.14)';
+        ctx.beginPath();
+        ctx.moveTo(220, 0); ctx.lineTo(360, 0); ctx.lineTo(540, 500); ctx.lineTo(140, 500);
+        ctx.closePath();
+        ctx.fill();
+
+        // Gothic pillars
+        ctx.fillStyle = '#042f2e';
+        ctx.fillRect(150, 80, 55, 420);
+        ctx.fillRect(595, 80, 55, 420);
+        ctx.beginPath();
+        ctx.arc(400, 160, 220, Math.PI, 0);
+        ctx.lineWidth = 35;
+        ctx.strokeStyle = '#042f2e';
+        ctx.stroke();
+      } else if (preset === 'manga_cover') {
+        const grad = ctx.createLinearGradient(0, 0, 800, 500);
+        grad.addColorStop(0, '#4c0519');
+        grad.addColorStop(0.5, '#881337');
+        grad.addColorStop(1, '#1e1b4b');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 500);
+
+        // Golden magic circle
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(400, 250, 165, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeRect(284, 134, 232, 232);
+
+        // Crescent Moon
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(400, 250, 75, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#881337';
+        ctx.beginPath();
+        ctx.arc(425, 235, 65, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Spirit Fox VFX
+        ctx.fillStyle = '#090a0f';
+        ctx.fillRect(0, 0, 800, 500);
+
+        const orbs = [
+          { x: 260, y: 260, r: 90, c: 'rgba(124, 92, 255, 0.55)' },
+          { x: 420, y: 210, r: 120, c: 'rgba(6, 182, 212, 0.45)' },
+          { x: 540, y: 290, r: 85, c: 'rgba(244, 63, 94, 0.45)' }
+        ];
+        orbs.forEach(o => {
+          const rg = ctx.createRadialGradient(o.x, o.y, 5, o.x, o.y, o.r);
+          rg.addColorStop(0, '#ffffff');
+          rg.addColorStop(0.3, o.c);
+          rg.addColorStop(1, 'transparent');
+          ctx.fillStyle = rg;
+          ctx.beginPath();
+          ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      const dataUrl = canvas.toDataURL('image/webp', 0.85);
+      const palette = extractPaletteFromCanvas(canvas);
+      return { dataUrl, palette };
+    }
+
+    // Extract 5 dominant colors from an HTML5 Canvas
+    function extractPaletteFromCanvas(canvas) {
+      try {
+        const sampleCanvas = document.createElement('canvas');
+        sampleCanvas.width = 40;
+        sampleCanvas.height = 40;
+        const sCtx = sampleCanvas.getContext('2d');
+        sCtx.drawImage(canvas, 0, 0, 40, 40);
+        const data = sCtx.getImageData(0, 0, 40, 40).data;
+
+        const colorCounts = {};
+        for (let i = 0; i < data.length; i += 16) {
+          const r = Math.round(data[i] / 32) * 32;
+          const g = Math.round(data[i + 1] / 32) * 32;
+          const b = Math.round(data[i + 2] / 32) * 32;
+          const hex = '#' + [r, g, b].map(v => Math.min(255, v).toString(16).padStart(2, '0')).join('').toUpperCase();
+          colorCounts[hex] = (colorCounts[hex] || 0) + 1;
+        }
+
+        const sorted = Object.entries(colorCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(entry => entry[0]);
+
+        return sorted.length ? sorted : ['#7C5CFF', '#10B981', '#F59E0B', '#1E293B'];
+      } catch (e) {
+        return ['#7C5CFF', '#10B981', '#F59E0B', '#1E293B'];
+      }
+    }
+
+    // Compress uploaded image file to max 1100px WebP/JPEG
+    function compressImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 1100;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/webp', 0.82);
+            const palette = extractPaletteFromCanvas(canvas);
+            resolve({ dataUrl, palette });
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Helper: Offset date string YYYY-MM-DD relative to today
+    function getRelativeDateStr(daysOffset) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      return d.toISOString().split('T')[0];
+    }
+
+    // Create 6 Realistic Starter Artworks
+    function createStarterArtworks() {
+      const art1 = generateProceduralArt('cyber_ronin');
+      const art2 = generateProceduralArt('mecha_3d');
+      const art3 = generateProceduralArt('anime_train');
+      const art4 = generateProceduralArt('sunken_ruins');
+      const art5 = generateProceduralArt('manga_cover');
+      const art6 = generateProceduralArt('spirit_vfx');
+
+      return [
+        {
+          id: 'art_101',
+          title: 'Kaito — Cyber Ronin Character Sheet',
+          project: 'Cyber Ronin Series',
+          category: 'Character Design',
+          stage: 'Compositing / Done',
+          software: ['CSP', 'Photoshop'],
+          tags: ['Kaito', 'Character Sheet', 'Cyberpunk', 'Turnaround'],
+          deadline: getRelativeDateStr(-2),
+          isPublic: true,
+          workSeconds: 19800, // 5h 30m
+          sourcePath: 'D:\\ArtStudio\\Projects\\CyberRonin\\Chars\\Kaito_Turnaround_Final_v04.clip',
+          notes: 'ออกแบบชุดเกราะซามูไรไซเบอร์พร้อม Callout อาวุธและโทนสีหลักสำหรับทีมแอนิเมชัน',
+          palette: art1.palette,
+          versions: [
+            { label: 'Rough Silhouette', image: art6.dataUrl, note: 'วางโครงสร้างสัดส่วนและท่าโพสเริ่มต้น', date: getRelativeDateStr(-10) },
+            { label: 'Final Render & Sheet', image: art1.dataUrl, note: 'ลงสีสมบูรณ์และจัดหน้า Character Sheet', date: getRelativeDateStr(-2) }
+          ]
+        },
+        {
+          id: 'art_102',
+          title: 'Aether Mech MK-IV (3D Hard-Surface Rig)',
+          project: 'Project Aether',
+          category: '3D Model / Rig',
+          stage: 'Color / Shading',
+          software: ['Blender'],
+          tags: ['Mecha', 'Hard-Surface', 'Rigging', 'Turntable'],
+          deadline: getRelativeDateStr(2),
+          isPublic: true,
+          workSeconds: 31500, // 8h 45m
+          sourcePath: 'D:\\ArtStudio\\3D_Assets\\AetherMech\\Aether_MK4_Rigged_v07.blend',
+          notes: 'เช็กการขยับข้อต่อแขนกลและปรับ Shader โลหะสะท้อนแสงสตูดิโอ',
+          palette: art2.palette,
+          versions: [
+            { label: 'Shading & Lighting Pass', image: art2.dataUrl, note: 'ทดสอบแสง Rim Light สีส้มอำพัน', date: getRelativeDateStr(-1) }
+          ]
+        },
+        {
+          id: 'art_103',
+          title: 'Starlight Express — Ep.01 Keyframe Cut 14',
+          project: 'Starlight Express',
+          category: '2D Animation',
+          stage: 'Line / Modeling',
+          software: ['CSP', 'After Effects'],
+          tags: ['Keyframe', 'Night Train', 'Sakuga', 'BG'],
+          deadline: getRelativeDateStr(5),
+          isPublic: false,
+          workSeconds: 14400, // 4h 00m
+          sourcePath: 'G:\\My Drive\\Studio_2026\\Starlight_Ep01\\Cut14_TrainViaduct.aep',
+          notes: 'คีย์เฟรมรถไฟวิ่งข้ามสะพานยามค่ำคืน เตรียมส่งต่อเข้า After Effects ใส่แสง Lens Flare',
+          palette: art3.palette,
+          versions: [
+            { label: 'Layout & Lighting Comp', image: art3.dataUrl, note: 'จัดองค์ประกอบแสงหน้าต่างรถไฟและท้องฟ้า', date: getRelativeDateStr(0) }
+          ]
+        },
+        {
+          id: 'art_104',
+          title: 'Sunken Cathedral — Environment Concept',
+          project: 'Project Aether',
+          category: 'Background / Concept',
+          stage: 'Compositing / Done',
+          software: ['Photoshop', 'Blender'],
+          tags: ['Environment', 'Underwater', 'Concept Art', 'Lighting'],
+          deadline: getRelativeDateStr(-5),
+          isPublic: true,
+          workSeconds: 16200, // 4h 30m
+          sourcePath: 'D:\\ArtStudio\\Projects\\Aether\\Env\\SunkenCathedral_PaintOver.psd',
+          notes: 'ขึ้น Blockout 3D ใน Blender แล้วเพนต์ทับบรรยากาศแสงใต้น้ำใน Photoshop',
+          palette: art4.palette,
+          versions: [
+            { label: 'Final Paint-Over', image: art4.dataUrl, note: 'เพิ่มแสง God-rays และรายละเอียดตะไคร่น้ำ', date: getRelativeDateStr(-5) }
+          ]
+        },
+        {
+          id: 'art_105',
+          title: 'Chrono Witch Vol.1 — Cover Illustration',
+          project: 'Chrono Witch Manga',
+          category: 'Illustration / Manga',
+          stage: 'Sketch / Blocking',
+          software: ['CSP'],
+          tags: ['Cover Art', 'Magic Circle', 'Promo', 'Illustration'],
+          deadline: getRelativeDateStr(9),
+          isPublic: false,
+          workSeconds: 7200, // 2h 00m
+          sourcePath: 'D:\\ArtStudio\\Commissions\\ChronoWitch\\Vol1_Cover_Rough.clip',
+          notes: 'วางองค์ประกอบวงแหวนเวทมนตร์และพระจันทร์เสี้ยว รอลูกค้าอนุมัติ Rough สี',
+          palette: art5.palette,
+          versions: [
+            { label: 'Color Rough Sketch', image: art5.dataUrl, note: 'วางโทนสีแดงเข้มตัดทองสำหรับหน้าปก', date: getRelativeDateStr(0) }
+          ]
+        },
+        {
+          id: 'art_106',
+          title: 'Spirit Fox Wisps — Particle & VFX Shot',
+          project: 'Cyber Ronin Series',
+          category: '2D Animation',
+          stage: 'Idea / Brief',
+          software: ['After Effects', 'Premiere Pro'],
+          tags: ['VFX', 'Particles', 'Shader', 'Magic'],
+          deadline: getRelativeDateStr(14),
+          isPublic: true,
+          workSeconds: 3600, // 1h 00m
+          sourcePath: 'D:\\ArtStudio\\VFX_Library\\SpiritFox_Wisps_v01.aep',
+          notes: 'ทดสอบการเคลื่อนที่ของลูกไฟวิญญาณและหางแสงนีออน',
+          palette: art6.palette,
+          versions: [
+            { label: 'Particle Motion Test', image: art6.dataUrl, note: 'เรนเดอร์ทดสอบความฟุ้งของอนุภาค', date: getRelativeDateStr(0) }
+          ]
+        }
+      ];
+    }
+
+    // -------------------- 3. INITIALIZATION & STORAGE --------------------
+    async function initApp() {
+      // Load Theme safely
+      let savedTheme = 'dark';
+      try {
+        savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+      } catch (e) {}
+      applyTheme(savedTheme);
+
+      // Probe IndexedDB availability first
+      try {
+        await openStudioDB();
+        state.storageBackend = 'indexeddb';
+      } catch (err) {
+        try {
+          localStorage.setItem('__artflow_probe__', '1');
+          localStorage.removeItem('__artflow_probe__');
+          state.storageBackend = 'localstorage';
+        } catch (e) {
+          state.storageBackend = 'memory';
+        }
+      }
+
+      // Check artflow_initialized flag across IndexedDB & localStorage
+      let isInitialized = await dbGet(INIT_FLAG_KEY);
+      if (!isInitialized) {
+        try {
+          if (localStorage.getItem(INIT_FLAG_KEY) === 'true') {
+            isInitialized = true;
+          }
+        } catch (e) {}
+      }
+
+      if (isInitialized) {
+        // Already initialized: load saved artworks even if array is empty (0 items)
+        const savedArtworks = await dbGet('artworks');
+        if (Array.isArray(savedArtworks)) {
+          state.artworks = savedArtworks;
+        } else {
+          state.artworks = [];
+        }
+      } else {
+        // First time launch: migrate legacy localStorage data if present, else load starter demos once
+        let legacyArtworks = null;
+        try {
+          const rawLegacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+          if (rawLegacy) {
+            const parsedLegacy = JSON.parse(rawLegacy);
+            if (Array.isArray(parsedLegacy)) {
+              legacyArtworks = parsedLegacy;
+            }
+          }
+        } catch (e) {}
+
+        if (legacyArtworks !== null) {
+          state.artworks = legacyArtworks;
+        } else {
+          state.artworks = createStarterArtworks();
+        }
+
+        await dbSet(INIT_FLAG_KEY, true);
+        await saveData(true);
+      }
+
+      updateSaveStatusUI('saved');
+      renderSoftwareFilterPills();
+      populateProjectDropdowns();
+      refreshAllViews();
+      startGlobalTimerLoop();
+    }
+
+    async function saveData(silent = false) {
+      if (!silent) updateSaveStatusUI('saving');
+      try {
+        await dbSet(INIT_FLAG_KEY, true);
+        const persisted = await dbSet('artworks', state.artworks);
+        if (!persisted && state.storageBackend === 'memory') {
+          updateSaveStatusUI('sandbox');
+        } else {
+          setTimeout(() => updateSaveStatusUI('saved'), 180);
+        }
+      } catch (e) {
+        updateSaveStatusUI('sandbox');
+        showToast('ไม่สามารถบันทึกข้อมูลลงเบราว์เซอร์ได้ กรุณา Export JSON', 'error');
+      }
+    }
+
+    // -------------------- 4. THEME SWITCHER (DARK / LIGHT) --------------------
+    function applyTheme(theme) {
+      const htmlEl = document.documentElement;
+      const iconSun = document.getElementById('iconSun');
+      const iconMoon = document.getElementById('iconMoon');
+      const themeLabel = document.getElementById('themeLabel');
+
+      if (theme === 'dark') {
+        htmlEl.classList.add('dark');
+        iconSun.classList.remove('hidden');
+        iconMoon.classList.add('hidden');
+        themeLabel.textContent = 'Light';
+      } else {
+        htmlEl.classList.remove('dark');
+        iconSun.classList.add('hidden');
+        iconMoon.classList.remove('hidden');
+        themeLabel.textContent = 'Dark';
+      }
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {}
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const nextTheme = isDark ? 'light' : 'dark';
+      applyTheme(nextTheme);
+      showToast(nextTheme === 'dark' ? 'เปลี่ยนเป็นธีมมืด (Dark Mode)' : 'เปลี่ยนเป็นธีมสว่าง (Light Mode)');
+    }
+
+    // -------------------- 5. NAVIGATION & APP MODES --------------------
+    function toggleAppMode() {
+      state.appMode = state.appMode === 'workspace' ? 'portfolio' : 'workspace';
+      const workspaceContainer = document.getElementById('workspaceContainer');
+      const portfolioContainer = document.getElementById('portfolioContainer');
+      const workspaceNavTabs = document.getElementById('workspaceNavTabs');
+      const createArtworkBtn = document.getElementById('createArtworkBtn');
+      const backupBtn = document.getElementById('backupBtn');
+      const modeBadge = document.getElementById('modeBadge');
+      const appModeLabel = document.getElementById('appModeLabel');
+
+      if (state.appMode === 'portfolio') {
+        workspaceContainer.classList.add('hidden');
+        workspaceNavTabs.classList.add('hidden');
+        createArtworkBtn.classList.add('hidden');
+        backupBtn.classList.add('hidden');
+        portfolioContainer.classList.remove('hidden');
+
+        modeBadge.textContent = 'Public Portfolio';
+        modeBadge.className = 'text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-studio-emerald/15 text-studio-emerald border border-studio-emerald/30';
+        appModeLabel.textContent = 'Workspace';
+        renderPortfolioView();
+      } else {
+        portfolioContainer.classList.add('hidden');
+        workspaceContainer.classList.remove('hidden');
+        workspaceNavTabs.classList.remove('hidden');
+        createArtworkBtn.classList.remove('hidden');
+        backupBtn.classList.remove('hidden');
+
+        modeBadge.textContent = 'Workspace';
+        modeBadge.className = 'text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-studio-violet/15 text-studio-violet border border-studio-violet/30';
+        appModeLabel.textContent = 'Portfolio Preview';
+        refreshAllViews();
+      }
+    }
+
+    function switchWorkspaceTab(tab) {
+      state.workspaceTab = tab;
+      const viewVault = document.getElementById('view-vault');
+      const viewPipeline = document.getElementById('view-pipeline');
+      const tabVault = document.getElementById('tab-vault');
+      const tabPipeline = document.getElementById('tab-pipeline');
+
+      const activeClasses = ['bg-white', 'dark:bg-obsidian-750', 'text-slate-900', 'dark:text-white', 'shadow-sm', 'font-semibold'];
+      const inactiveClasses = ['text-slate-600', 'dark:text-slate-400', 'font-medium'];
+
+      if (tab === 'vault') {
+        viewVault.classList.remove('hidden');
+        viewPipeline.classList.add('hidden');
+        tabVault.classList.add(...activeClasses);
+        tabVault.classList.remove(...inactiveClasses);
+        tabPipeline.classList.remove(...activeClasses);
+        tabPipeline.classList.add(...inactiveClasses);
+        renderVault();
+      } else {
+        viewVault.classList.add('hidden');
+        viewPipeline.classList.remove('hidden');
+        tabPipeline.classList.add(...activeClasses);
+        tabPipeline.classList.remove(...inactiveClasses);
+        tabVault.classList.remove(...activeClasses);
+        tabVault.classList.add(...inactiveClasses);
+        renderPipelineViews();
+      }
+    }
+
+    function switchPipelineSubView(sub) {
+      state.pipelineSubView = sub;
+      const kanbanView = document.getElementById('kanbanView');
+      const calendarView = document.getElementById('calendarView');
+      const subKanban = document.getElementById('subtab-kanban');
+      const subCal = document.getElementById('subtab-calendar');
+
+      const activeClasses = ['bg-white', 'dark:bg-obsidian-750', 'text-slate-900', 'dark:text-white', 'shadow-sm', 'font-semibold'];
+      const inactiveClasses = ['text-slate-600', 'dark:text-slate-400', 'font-medium'];
+
+      if (sub === 'kanban') {
+        kanbanView.classList.remove('hidden');
+        calendarView.classList.add('hidden');
+        subKanban.classList.add(...activeClasses);
+        subKanban.classList.remove(...inactiveClasses);
+        subCal.classList.remove(...activeClasses);
+        subCal.classList.add(...inactiveClasses);
+        renderKanban();
+      } else {
+        kanbanView.classList.add('hidden');
+        calendarView.classList.remove('hidden');
+        subCal.classList.add(...activeClasses);
+        subCal.classList.remove(...inactiveClasses);
+        subKanban.classList.remove(...activeClasses);
+        subKanban.classList.add(...inactiveClasses);
+        renderCalendar();
+      }
+    }
+
+    function refreshAllViews() {
+      updateStudioStats();
+      populateProjectDropdowns();
+      if (state.appMode === 'portfolio') {
+        renderPortfolioView();
+      } else {
+        renderVault();
+        renderPipelineViews();
+      }
+    }
+
+    function renderPipelineViews() {
+      if (state.pipelineSubView === 'kanban') {
+        renderKanban();
+      } else {
+        renderCalendar();
+      }
+    }
+
+    // -------------------- 6. STATS & FILTERS --------------------
+    function updateStudioStats() {
+      const total = state.artworks.length;
+      const inProgress = state.artworks.filter(a => a.stage !== 'Compositing / Done').length;
+      const publicCount = state.artworks.filter(a => a.isPublic).length;
+      const totalSecs = state.artworks.reduce((acc, a) => acc + (a.workSeconds || 0), 0);
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statInProgress').textContent = inProgress;
+      document.getElementById('statPublic').textContent = publicCount;
+      document.getElementById('statHours').textContent = (totalSecs / 3600).toFixed(1) + 'h';
+    }
+
+    function renderSoftwareFilterPills() {
+      const container = document.getElementById('softwareFilterPills');
+      const items = ['ALL', ...SOFTWARE_LIST];
+      container.innerHTML = items.map(sw => {
+        const isActive = state.selectedSoftware === sw;
+        const label = sw === 'ALL' ? 'ทั้งหมด (All)' : sw;
+        return `
+          <button onclick="selectSoftwareFilter('${sw}')" class="px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
+            isActive
+              ? 'bg-studio-violet text-white shadow-sm'
+              : 'bg-slate-100 dark:bg-obsidian-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-obsidian-750'
+          }">
+            ${label}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectSoftwareFilter(sw) {
+      state.selectedSoftware = sw;
+      renderSoftwareFilterPills();
+      renderVault();
+    }
+
+    function populateProjectDropdowns() {
+      const projects = [...new Set(state.artworks.map(a => a.project).filter(Boolean))].sort();
+      const filterSelect = document.getElementById('filterProject');
+      const currentVal = filterSelect.value;
+
+      filterSelect.innerHTML = `<option value="ALL">ทุกโปรเจกต์ (All Projects)</option>` +
+        projects.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+
+      if (projects.includes(currentVal)) {
+        filterSelect.value = currentVal;
+      }
+
+      const datalist = document.getElementById('projectSuggestions');
+      if (datalist) {
+        datalist.innerHTML = projects.map(p => `<option value="${escapeHtml(p)}">`).join('');
+      }
+    }
+
+    function resetVaultFilters() {
+      document.getElementById('vaultSearchInput').value = '';
+      document.getElementById('filterProject').value = 'ALL';
+      document.getElementById('filterCategory').value = 'ALL';
+      document.getElementById('filterVisibility').value = 'ALL';
+      state.selectedSoftware = 'ALL';
+      renderSoftwareFilterPills();
+      renderVault();
+    }
+
+    // -------------------- 7. MODULE A: SMART ART VAULT RENDERER --------------------
+    function renderVault() {
+      const grid = document.getElementById('vaultGrid');
+      const emptyState = document.getElementById('vaultEmptyState');
+
+      const search = document.getElementById('vaultSearchInput').value.trim().toLowerCase();
+      const projectFilter = document.getElementById('filterProject').value;
+      const categoryFilter = document.getElementById('filterCategory').value;
+      const visibilityFilter = document.getElementById('filterVisibility').value;
+
+      const filtered = state.artworks.filter(art => {
+        if (projectFilter !== 'ALL' && art.project !== projectFilter) return false;
+        if (categoryFilter !== 'ALL' && art.category !== categoryFilter) return false;
+        if (visibilityFilter === 'PUBLIC' && !art.isPublic) return false;
+        if (visibilityFilter === 'PRIVATE' && art.isPublic) return false;
+        if (state.selectedSoftware !== 'ALL' && !(art.software || []).includes(state.selectedSoftware)) return false;
+
+        if (search) {
+          const haystack = [
+            art.title,
+            art.project,
+            art.category,
+            art.notes,
+            art.sourcePath,
+            ...(art.tags || []),
+            ...(art.software || [])
+          ].join(' ').toLowerCase();
+          if (!haystack.includes(search)) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      grid.innerHTML = filtered.map(art => {
+        const latestVer = art.versions[art.versions.length - 1];
+        const previewImg = latestVer ? latestVer.image : '';
+        const stageBadgeClass = getStageBadgeStyle(art.stage);
+        const timeStr = formatDurationShort(art.workSeconds || 0);
+        const isRunning = state.activeTimerArtworkId === art.id;
+
+        return `
+          <article class="group rounded-2xl bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 hover:border-studio-violet/60 dark:hover:border-studio-violet/60 overflow-hidden flex flex-col shadow-sm hover:shadow-xl hover:shadow-studio-violet/5 transition-all duration-200">
+            
+            <!-- Thumbnail Preview -->
+            <div onclick="openInspectorModal('${art.id}')" class="relative aspect-[16/10] bg-slate-900 overflow-hidden cursor-pointer">
+              <img src="${previewImg}" alt="${escapeHtml(art.title)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              
+              <!-- Top Overlay Badges -->
+              <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5">
+                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md ${stageBadgeClass}">
+                  ${escapeHtml(art.stage)}
+                </span>
+                ${art.versions.length > 1 ? `
+                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-black/65 text-white backdrop-blur-md">
+                    ${art.versions.length} WIPs
+                  </span>
+                ` : ''}
+              </div>
+
+              <!-- Bottom Color Palette Strip -->
+              <div class="absolute bottom-2 left-2.5 flex items-center gap-1">
+                ${(art.palette || []).slice(0, 5).map(hex => `
+                  <span class="w-3 h-3 rounded-full border border-white/60 shadow-sm" style="background-color: ${hex}" title="${hex}"></span>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Card Content -->
+            <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+              <div onclick="openInspectorModal('${art.id}')" class="cursor-pointer space-y-1.5">
+                <div class="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span class="font-semibold text-studio-violet truncate">${escapeHtml(art.project || 'Personal Study')}</span>
+                  <span class="shrink-0">${escapeHtml(art.category)}</span>
+                </div>
+                <h3 class="font-bold text-sm leading-snug line-clamp-1 group-hover:text-studio-violet transition-colors">${escapeHtml(art.title)}</h3>
+                
+                <!-- Software Badges -->
+                <div class="flex flex-wrap gap-1 pt-1">
+                  ${(art.software || []).map(sw => `
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-obsidian-750 text-slate-700 dark:text-slate-300">${escapeHtml(sw)}</span>
+                  `).join('')}
+                </div>
+              </div>
+
+              <!-- Footer: Logged Time & Quick Public/Private Switch -->
+              <div class="pt-2.5 border-t border-slate-100 dark:border-obsidian-700/80 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 text-[11px] font-mono ${isRunning ? 'text-studio-emerald font-bold' : 'text-slate-500 dark:text-slate-400'}">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span>${timeStr}</span>
+                </div>
+
+                <!-- Quick Visibility Toggle -->
+                <button onclick="toggleArtworkPublic('${art.id}', event)" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  art.isPublic
+                    ? 'bg-studio-emerald/15 text-studio-emerald hover:bg-studio-emerald/25'
+                    : 'bg-slate-100 dark:bg-obsidian-750 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                }" title="สลับสถานะ Public / Private">
+                  <span class="w-1.5 h-1.5 rounded-full ${art.isPublic ? 'bg-studio-emerald' : 'bg-slate-400'}"></span>
+                  <span>${art.isPublic ? 'Public' : 'Private'}</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function toggleArtworkPublic(id, event) {
+      if (event) event.stopPropagation();
+      const art = state.artworks.find(a => a.id === id);
+      if (!art) return;
+      art.isPublic = !art.isPublic;
+      saveData();
+      updateStudioStats();
+      renderVault();
+      showToast(art.isPublic ? `เปิดแสดง "${art.title}" บนหน้า Portfolio แล้ว` : `ซ่อน "${art.title}" เป็น Private แล้ว`);
+    }
+
+    // -------------------- 8. MODULE B1: ART PIPELINE KANBAN BOARD --------------------
+    function renderKanban() {
+      const board = document.getElementById('kanbanBoardGrid');
+
+      board.innerHTML = PIPELINE_STAGES.map((stage, stageIdx) => {
+        const items = state.artworks.filter(a => a.stage === stage.id);
+
+        return `
+          <div class="kanban-column rounded-2xl bg-slate-100/80 dark:bg-obsidian-800/90 border border-slate-200/80 dark:border-obsidian-700 p-3 flex flex-col min-h-[460px] transition-colors"
+               ondragover="handleKanbanDragOver(event)"
+               ondragleave="handleKanbanDragLeave(event)"
+               ondrop="handleKanbanDrop(event, '${stage.id}')">
+            
+            <!-- Column Header -->
+            <div class="flex items-center justify-between mb-3 px-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full ${stage.dot}"></span>
+                <h3 class="text-xs font-bold tracking-wide">${stage.label}</h3>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-white dark:bg-obsidian-750 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-obsidian-700">
+                ${items.length}
+              </span>
+            </div>
+
+            <!-- Cards Stack -->
+            <div class="flex-1 space-y-3">
+              ${items.map(art => renderKanbanCard(art, stageIdx)).join('')}
+            </div>
+
+            <!-- Quick Add Task in Stage -->
+            <button onclick="openCreateModal('${stage.id}')" class="mt-3 w-full py-2 rounded-xl text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-studio-violet hover:bg-white dark:hover:bg-obsidian-750 border border-dashed border-slate-300 dark:border-obsidian-700 transition-all">
+              + เพิ่มงานในขั้นนี้
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderKanbanCard(art, stageIdx) {
+      const latestVer = art.versions[art.versions.length - 1];
+      const thumb = latestVer ? latestVer.image : '';
+      const deadlineInfo = getDeadlineStatus(art.deadline, art.stage === 'Compositing / Done');
+      const isRunning = state.activeTimerArtworkId === art.id;
+      const timeFormatted = formatDurationHMS(art.workSeconds || 0);
+
+      return `
+        <div draggable="true"
+             ondragstart="handleKanbanDragStart(event, '${art.id}')"
+             class="rounded-xl bg-white dark:bg-obsidian-850 border ${isRunning ? 'border-studio-emerald shadow-md shadow-studio-emerald/10' : 'border-slate-200/90 dark:border-obsidian-700'} p-3 shadow-sm hover:border-studio-violet/60 transition-all cursor-grab active:cursor-grabbing space-y-2.5">
+          
+          <!-- Thumbnail + Title -->
+          <div onclick="openInspectorModal('${art.id}')" class="flex gap-2.5 items-start cursor-pointer">
+            <img src="${thumb}" alt="" class="w-14 h-14 rounded-lg object-cover bg-slate-900 shrink-0 border border-slate-200 dark:border-obsidian-700" />
+            <div class="min-w-0 flex-1">
+              <p class="text-[10px] font-semibold text-studio-violet truncate">${escapeHtml(art.project || 'Personal')}</p>
+              <h4 class="text-xs font-bold leading-snug line-clamp-2 mt-0.5">${escapeHtml(art.title)}</h4>
+            </div>
+          </div>
+
+          <!-- Software & Deadline Badges -->
+          <div class="flex flex-wrap items-center justify-between gap-1.5">
+            <div class="flex flex-wrap gap-1">
+              ${(art.software || []).slice(0, 2).map(sw => `
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-obsidian-750 text-slate-600 dark:text-slate-300">${escapeHtml(sw)}</span>
+              `).join('')}
+            </div>
+
+            ${art.deadline ? `
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold ${deadlineInfo.badgeClass}">
+                ${deadlineInfo.text}
+              </span>
+            ` : ''}
+          </div>
+
+          <!-- Stopwatch Timer & Quick Stage Shift Arrows -->
+          <div class="pt-2 border-t border-slate-100 dark:border-obsidian-700/80 flex items-center justify-between gap-1">
+            <button onclick="toggleArtworkTimer('${art.id}', event)" class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono font-semibold transition-all ${
+              isRunning
+                ? 'bg-studio-emerald text-white shadow-sm'
+                : 'bg-slate-100 dark:bg-obsidian-750 text-slate-700 dark:text-slate-300 hover:bg-studio-emerald/15 hover:text-studio-emerald'
+            }" title="${isRunning ? 'หยุดจับเวลา' : 'เริ่มจับเวลาทำงาน'}">
+              <span>${isRunning ? '⏸' : '▶'}</span>
+              <span data-timer-id="${art.id}">${timeFormatted}</span>
+            </button>
+
+            <div class="flex items-center gap-1">
+              ${stageIdx > 0 ? `
+                <button onclick="moveArtworkStage('${art.id}', -1)" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-obsidian-750 text-slate-500" title="ย้ายกลับขั้นตอนก่อนหน้า">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+              ` : ''}
+              ${stageIdx < PIPELINE_STAGES.length - 1 ? `
+                <button onclick="moveArtworkStage('${art.id}', 1)" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-obsidian-750 text-slate-500" title="เลื่อนไปขั้นตอนถัดไป">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Kanban Drag & Drop Handlers
+    let draggedArtworkId = null;
+
+    function handleKanbanDragStart(event, id) {
+      draggedArtworkId = id;
+      event.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleKanbanDragOver(event) {
+      event.preventDefault();
+      event.currentTarget.classList.add('drag-over');
+    }
+
+    function handleKanbanDragLeave(event) {
+      event.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleKanbanDrop(event, targetStage) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('drag-over');
+      if (!draggedArtworkId) return;
+
+      const art = state.artworks.find(a => a.id === draggedArtworkId);
+      if (art && art.stage !== targetStage) {
+        art.stage = targetStage;
+        saveData();
+        updateStudioStats();
+        renderKanban();
+        showToast(`ย้าย "${art.title}" ไปยัง ${targetStage}`);
+      }
+      draggedArtworkId = null;
+    }
+
+    function moveArtworkStage(id, direction) {
+      const art = state.artworks.find(a => a.id === id);
+      if (!art) return;
+      const idx = PIPELINE_STAGES.findIndex(s => s.id === art.stage);
+      const nextIdx = idx + direction;
+      if (nextIdx >= 0 && nextIdx < PIPELINE_STAGES.length) {
+        art.stage = PIPELINE_STAGES[nextIdx].id;
+        saveData();
+        updateStudioStats();
+        renderKanban();
+        showToast(`อัปเดตสถานะเป็น ${art.stage}`);
+      }
+    }
+
+    // -------------------- 9. MODULE B2: VISUAL DEADLINE CALENDAR --------------------
+    function renderCalendar() {
+      const year = state.calendarDate.getFullYear();
+      const month = state.calendarDate.getMonth();
+
+      const thaiMonths = [
+        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+      ];
+      document.getElementById('calendarMonthTitle').textContent = `${thaiMonths[month]} ${year}`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      const grid = document.getElementById('calendarDaysGrid');
+      let cellsHtml = '';
+
+      // Leading blank cells
+      for (let i = 0; i < firstDay; i++) {
+        cellsHtml += `<div class="min-h-[115px] sm:min-h-[135px] bg-slate-50/60 dark:bg-obsidian-900/50 p-2"></div>`;
+      }
+
+      // Month days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isToday = dateStr === todayStr;
+        const dueItems = state.artworks.filter(a => a.deadline === dateStr);
+
+        cellsHtml += `
+          <div class="min-h-[115px] sm:min-h-[135px] p-1.5 sm:p-2 flex flex-col justify-between group hover:bg-slate-50 dark:hover:bg-obsidian-850/80 transition-colors ${isToday ? 'bg-studio-violet/5 dark:bg-studio-violet/10' : ''}">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
+                  isToday ? 'bg-studio-violet text-white' : 'text-slate-700 dark:text-slate-300'
+                }">${day}</span>
+
+                <button onclick="openCreateModal('Idea / Brief', '${dateStr}')" class="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md bg-slate-200 dark:bg-obsidian-700 text-xs font-bold flex items-center justify-center hover:bg-studio-violet hover:text-white transition-all" title="เพิ่มเดดไลน์วันที่ ${dateStr}">+</button>
+              </div>
+
+              <!-- Visual Mini Thumbnail Deadlines -->
+              <div class="space-y-1.5">
+                ${dueItems.map(art => {
+                  const latestVer = art.versions[art.versions.length - 1];
+                  const thumb = latestVer ? latestVer.image : '';
+                  const isDone = art.stage === 'Compositing / Done';
+                  const isOverdue = !isDone && dateStr < todayStr;
+                  const ringColor = isDone ? 'border-studio-emerald' : (isOverdue ? 'border-rose-500' : 'border-studio-violet');
+
+                  return `
+                    <div onclick="openInspectorModal('${art.id}')" class="flex items-center gap-1.5 p-1 rounded-lg bg-white dark:bg-obsidian-800 border-l-2 ${ringColor} shadow-xs hover:scale-[1.02] transition-transform cursor-pointer">
+                      <img src="${thumb}" alt="" class="w-6 h-6 rounded object-cover shrink-0" />
+                      <span class="text-[10px] font-semibold truncate leading-tight">${escapeHtml(art.title)}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      grid.innerHTML = cellsHtml;
+    }
+
+    function changeCalendarMonth(delta) {
+      state.calendarDate.setMonth(state.calendarDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function goCalendarToday() {
+      state.calendarDate = new Date();
+      renderCalendar();
+    }
+
+    // -------------------- 10. LIVE STOPWATCH TIMER ENGINE --------------------
+    function startGlobalTimerLoop() {
+      setInterval(() => {
+        if (!state.activeTimerArtworkId) return;
+        const art = state.artworks.find(a => a.id === state.activeTimerArtworkId);
+        if (!art) {
+          state.activeTimerArtworkId = null;
+          updateHeaderTimerUI();
+          return;
+        }
+
+        art.workSeconds = (art.workSeconds || 0) + 1;
+        const formatted = formatDurationHMS(art.workSeconds);
+
+        // Update Header Pill
+        const headerText = document.getElementById('headerTimerText');
+        if (headerText) headerText.textContent = formatted;
+
+        // Update Kanban Card Timer if visible
+        const cardTimerEl = document.querySelector(`[data-timer-id="${art.id}"]`);
+        if (cardTimerEl) cardTimerEl.textContent = formatted;
+
+        // Update Inspector Timer if open for this artwork
+        if (state.inspectorArtworkId === art.id) {
+          const inspLabel = document.getElementById('inspTimerLabel');
+          if (inspLabel) inspLabel.textContent = formatted;
+        }
+
+        // Persist every 5 seconds
+        if (art.workSeconds % 5 === 0) {
+          saveData();
+          updateStudioStats();
+        }
+      }, 1000);
+    }
+
+    function toggleArtworkTimer(id, event) {
+      if (event) event.stopPropagation();
+      if (state.activeTimerArtworkId === id) {
+        state.activeTimerArtworkId = null;
+        saveData();
+        updateStudioStats();
+        showToast('หยุดจับเวลาทำงานชั่วคราว');
+      } else {
+        state.activeTimerArtworkId = id;
+        const art = state.artworks.find(a => a.id === id);
+        showToast(`เริ่มจับเวลา: ${art ? art.title : ''}`);
+      }
+      updateHeaderTimerUI();
+      if (state.workspaceTab === 'pipeline' && state.pipelineSubView === 'kanban') renderKanban();
+      if (state.workspaceTab === 'vault') renderVault();
+    }
+
+    function toggleInspectorTimer() {
+      if (!state.inspectorArtworkId) return;
+      toggleArtworkTimer(state.inspectorArtworkId);
+      updateInspectorTimerButton();
+    }
+
+    function updateHeaderTimerUI() {
+      const pill = document.getElementById('headerTimerPill');
+      const text = document.getElementById('headerTimerText');
+      if (state.activeTimerArtworkId) {
+        const art = state.artworks.find(a => a.id === state.activeTimerArtworkId);
+        if (art) {
+          pill.classList.remove('hidden');
+          pill.classList.add('flex');
+          text.textContent = formatDurationHMS(art.workSeconds || 0);
+          return;
+        }
+      }
+      pill.classList.add('hidden');
+      pill.classList.remove('flex');
+    }
+
+    function openActiveTimerInspector() {
+      if (state.activeTimerArtworkId) {
+        openInspectorModal(state.activeTimerArtworkId);
+      }
+    }
+
+    // -------------------- 11. CREATE NEW ARTWORK MODAL --------------------
+    function openCreateModal(defaultStage = 'Idea / Brief', defaultDeadline = '') {
+      document.getElementById('createArtworkForm').reset();
+      state.tempCreateImage = '';
+      state.tempCreatePalette = [];
+
+      document.getElementById('createPreviewImg').classList.add('hidden');
+      document.getElementById('createPreviewPlaceholder').classList.remove('hidden');
+      document.getElementById('createStage').value = defaultStage;
+      if (defaultDeadline) {
+        document.getElementById('createDeadline').value = defaultDeadline;
+      }
+
+      // Render software pills
+      const swContainer = document.getElementById('createSoftwareCheckboxes');
+      swContainer.innerHTML = SOFTWARE_LIST.map(sw => `
+        <label class="cursor-pointer select-none">
+          <input type="checkbox" name="createSw" value="${sw}" class="peer sr-only" ${sw === 'CSP' ? 'checked' : ''} />
+          <span class="inline-block px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-obsidian-700 bg-slate-50 dark:bg-obsidian-900 peer-checked:bg-studio-violet peer-checked:text-white peer-checked:border-studio-violet transition-all">
+            ${sw}
+          </span>
+        </label>
+      `).join('');
+
+      document.getElementById('createModal').classList.remove('hidden');
+    }
+
+    function closeCreateModal() {
+      document.getElementById('createModal').classList.add('hidden');
+    }
+
+    async function handleCreateImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const { dataUrl, palette } = await compressImageFile(file);
+        state.tempCreateImage = dataUrl;
+        state.tempCreatePalette = palette;
+
+        const imgEl = document.getElementById('createPreviewImg');
+        imgEl.src = dataUrl;
+        imgEl.classList.remove('hidden');
+        document.getElementById('createPreviewPlaceholder').classList.add('hidden');
+        showToast('บีบอัดภาพและดึงจานสีอัตโนมัติเรียบร้อย');
+      } catch (err) {
+        showToast('ไม่สามารถอ่านไฟล์ภาพได้', 'error');
+      }
+    }
+
+    function handleCreateImageUrlInput(url) {
+      if (!url.trim()) return;
+      state.tempCreateImage = url.trim();
+      const imgEl = document.getElementById('createPreviewImg');
+      imgEl.src = url.trim();
+      imgEl.classList.remove('hidden');
+      document.getElementById('createPreviewPlaceholder').classList.add('hidden');
+    }
+
+    function handleCreateArtwork(event) {
+      event.preventDefault();
+      const title = document.getElementById('createTitle').value.trim();
+      if (!title) return;
+
+      const project = document.getElementById('createProject').value.trim() || 'Personal Study';
+      const category = document.getElementById('createCategory').value;
+      const stage = document.getElementById('createStage').value;
+      const deadline = document.getElementById('createDeadline').value;
+      const sourcePath = document.getElementById('createSourcePath').value.trim();
+      const tagsRaw = document.getElementById('createTags').value;
+      const isPublic = document.getElementById('createVisibility').value === 'true';
+      const notes = document.getElementById('createNotes').value.trim();
+
+      const software = Array.from(document.querySelectorAll('input[name="createSw"]:checked')).map(el => el.value);
+      const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+      // If no image provided, generate a clean placeholder studio card preview
+      let finalImg = state.tempCreateImage;
+      let finalPalette = state.tempCreatePalette;
+      if (!finalImg) {
+        const presets = ['cyber_ronin', 'mecha_3d', 'anime_train', 'sunken_ruins', 'manga_cover', 'spirit_vfx'];
+        const pick = presets[state.artworks.length % presets.length];
+        const generated = generateProceduralArt(pick);
+        finalImg = generated.dataUrl;
+        finalPalette = generated.palette;
+      } else if (!finalPalette || finalPalette.length === 0) {
+        finalPalette = ['#7C5CFF', '#10B981', '#F59E0B', '#0F172A'];
+      }
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const newArtwork = {
+        id: 'art_' + Date.now(),
+        title,
+        project,
+        category,
+        stage,
+        software,
+        tags,
+        deadline,
+        isPublic,
+        workSeconds: 0,
+        sourcePath,
+        notes,
+        palette: finalPalette,
+        versions: [
+          {
+            label: stage,
+            image: finalImg,
+            note: notes || 'สร้างชิ้นงานเริ่มต้นในระบบ',
+            date: todayStr
+          }
+        ]
+      };
+
+      state.artworks.unshift(newArtwork);
+      saveData();
+      closeCreateModal();
+      refreshAllViews();
+      showToast(`เพิ่มผลงาน "${title}" เรียบร้อยแล้ว`);
+    }
+
+    // -------------------- 12. ARTWORK INSPECTOR & VERSION HISTORY --------------------
+    function openInspectorModal(id) {
+      const art = state.artworks.find(a => a.id === id);
+      if (!art) return;
+
+      state.inspectorArtworkId = id;
+      state.inspectorVersionIndex = art.versions.length - 1;
+
+      document.getElementById('inspHeaderTitle').textContent = art.title;
+      document.getElementById('inspStageBadge').textContent = art.stage;
+      document.getElementById('inspTitle').value = art.title;
+      document.getElementById('inspProject').value = art.project || '';
+      document.getElementById('inspCategory').value = art.category;
+      document.getElementById('inspStage').value = art.stage;
+      document.getElementById('inspDeadline').value = art.deadline || '';
+      document.getElementById('inspSourcePath').value = art.sourcePath || '';
+      document.getElementById('inspTags').value = (art.tags || []).join(', ');
+      document.getElementById('inspIsPublic').checked = !!art.isPublic;
+      document.getElementById('inspNotes').value = art.notes || '';
+
+      // Software checkboxes
+      const swContainer = document.getElementById('inspSoftwareCheckboxes');
+      swContainer.innerHTML = SOFTWARE_LIST.map(sw => {
+        const checked = (art.software || []).includes(sw);
+        return `
+          <label class="cursor-pointer select-none">
+            <input type="checkbox" name="inspSw" value="${sw}" class="peer sr-only" ${checked ? 'checked' : ''} />
+            <span class="inline-block px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 dark:border-obsidian-700 bg-slate-50 dark:bg-obsidian-900 peer-checked:bg-studio-violet peer-checked:text-white peer-checked:border-studio-violet transition-all">
+              ${sw}
+            </span>
+          </label>
+        `;
+      }).join('');
+
+      // Reset delete confirmation button
+      document.getElementById('deleteConfirmWrapper').innerHTML = `
+        <button type="button" onclick="promptDeleteArtwork()" class="px-3 py-2 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-500/10 transition-colors">ลบผลงานนี้</button>
+      `;
+
+      document.getElementById('addVersionBox').classList.add('hidden');
+      updateInspectorTimerButton();
+      renderInspectorVisuals();
+      document.getElementById('inspectorModal').classList.remove('hidden');
+    }
+
+    function closeInspectorModal() {
+      state.inspectorArtworkId = null;
+      document.getElementById('inspectorModal').classList.add('hidden');
+    }
+
+    function updateInspectorTimerButton() {
+      const art = state.artworks.find(a => a.id === state.inspectorArtworkId);
+      if (!art) return;
+      const btn = document.getElementById('inspTimerBtn');
+      const label = document.getElementById('inspTimerLabel');
+      const isRunning = state.activeTimerArtworkId === art.id;
+
+      label.textContent = formatDurationHMS(art.workSeconds || 0);
+      if (isRunning) {
+        btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-studio-emerald text-white shadow-sm transition-all';
+      } else {
+        btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-obsidian-700 hover:border-studio-emerald transition-all';
+      }
+    }
+
+    function renderInspectorVisuals() {
+      const art = state.artworks.find(a => a.id === state.inspectorArtworkId);
+      if (!art) return;
+
+      const ver = art.versions[state.inspectorVersionIndex] || art.versions[art.versions.length - 1];
+      document.getElementById('inspActiveImg').src = ver.image;
+      document.getElementById('inspVersionCaption').textContent = `v${state.inspectorVersionIndex + 1}: ${ver.label}${ver.note ? ' — ' + ver.note : ''}`;
+      document.getElementById('inspVersionDate').textContent = ver.date || '';
+
+      // Palette Swatches
+      const paletteEl = document.getElementById('inspPaletteSwatches');
+      paletteEl.innerHTML = (art.palette || []).map(hex => `
+        <button type="button" onclick="copyTextToClipboard('${hex}', 'คัดลอกรหัสสี ${hex} แล้ว')" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-700 hover:border-studio-violet transition-all group">
+          <span class="w-4 h-4 rounded-md shadow-xs" style="background-color: ${hex}"></span>
+          <span class="text-xs font-mono font-semibold group-hover:text-studio-violet">${hex}</span>
+        </button>
+      `).join('');
+
+      // Version History Thumbnails
+      const listEl = document.getElementById('inspVersionsList');
+      listEl.innerHTML = art.versions.map((v, idx) => {
+        const isSelected = idx === state.inspectorVersionIndex;
+        return `
+          <div onclick="selectInspectorVersion(${idx})" class="relative group rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
+            isSelected ? 'border-studio-violet shadow-md' : 'border-slate-200 dark:border-obsidian-700 opacity-75 hover:opacity-100'
+          }">
+            <div class="aspect-[16/10] bg-slate-900">
+              <img src="${v.image}" alt="" class="w-full h-full object-cover" />
+            </div>
+            ${art.versions.length > 1 ? `
+              <button type="button" onclick="deleteInspectorVersion(${idx}, event)" class="opacity-0 group-hover:opacity-100 absolute top-1.5 right-1.5 w-6 h-6 rounded-lg bg-black/75 hover:bg-rose-600 text-white flex items-center justify-center transition-all" title="ลบขั้นตอนภาพนี้">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            ` : ''}
+            <div class="p-2 bg-slate-50 dark:bg-obsidian-900">
+              <p class="text-[11px] font-bold truncate">v${idx + 1} • ${escapeHtml(v.label)}</p>
+              <p class="text-[10px] text-slate-500 truncate">${escapeHtml(v.date || '')}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectInspectorVersion(idx) {
+      state.inspectorVersionIndex = idx;
+      renderInspectorVisuals();
+    }
+
+    async function deleteInspectorVersion(idx, event) {
+      if (event) event.stopPropagation();
+      const art = state.artworks.find(a => a.id === state.inspectorArtworkId);
+      if (!art || art.versions.length <= 1) return;
+
+      const removed = art.versions.splice(idx, 1)[0];
+      if (state.inspectorVersionIndex >= art.versions.length) {
+        state.inspectorVersionIndex = art.versions.length - 1;
+      }
+      await saveData();
+      renderInspectorVisuals();
+      refreshAllViews();
+      showToast(`ลบขั้นตอน "${removed.label}" แล้ว`);
+    }
+
+    function toggleAddVersionBox() {
+      const box = document.getElementById('addVersionBox');
+      box.classList.toggle('hidden');
+    }
+
+    async function handleAddVersion() {
+      const art = state.artworks.find(a => a.id === state.inspectorArtworkId);
+      if (!art) return;
+
+      const label = document.getElementById('newVerLabel').value.trim() || `Revision v${art.versions.length + 1}`;
+      const note = document.getElementById('newVerNote').value.trim();
+      const fileInput = document.getElementById('newVerFile');
+
+      if (!fileInput.files || !fileInput.files[0]) {
+        showToast('กรุณาเลือกไฟล์ภาพสำหรับเวอร์ชันใหม่', 'error');
+        return;
+      }
+
+      try {
+        const { dataUrl, palette } = await compressImageFile(fileInput.files[0]);
+        art.versions.push({
+          label,
+          image: dataUrl,
+          note,
+          date: new Date().toISOString().split('T')[0]
+        });
+        art.palette = palette;
+        state.inspectorVersionIndex = art.versions.length - 1;
+
+        document.getElementById('newVerLabel').value = '';
+        document.getElementById('newVerNote').value = '';
+        fileInput.value = '';
+        document.getElementById('addVersionBox').classList.add('hidden');
+
+        saveData();
+        renderInspectorVisuals();
+        refreshAllViews();
+        showToast(`เพิ่มขั้นตอน "${label}" ลงในประวัติภาพแล้ว`);
+      } catch (err) {
+        showToast('เกิดข้อผิดพลาดในการอัปโหลดภาพ', 'error');
+      }
+    }
+
+    function copyInspectorSourcePath() {
+      const pathVal = document.getElementById('inspSourcePath').value.trim();
+      if (!pathVal) {
+        showToast('ยังไม่ได้ระบุที่เก็บไฟล์ต้นฉบับ', 'error');
+        return;
+      }
+      copyTextToClipboard(pathVal, 'คัดลอก Source File Path ลงคลิปบอร์ดแล้ว');
+    }
+
+    function saveInspectorChanges() {
+      const art = state.artworks.find(a => a.id === state.inspectorArtworkId);
+      if (!art) return;
+
+      const title = document.getElementById('inspTitle').value.trim();
+      if (!title) {
+        showToast('กรุณาระบุชื่อผลงาน', 'error');
+        return;
+      }
+
+      art.title = title;
+      art.project = document.getElementById('inspProject').value.trim() || 'Personal Study';
+      art.category = document.getElementById('inspCategory').value;
+      art.stage = document.getElementById('inspStage').value;
+      art.deadline = document.getElementById('inspDeadline').value;
+      art.sourcePath = document.getElementById('inspSourcePath').value.trim();
+      art.tags = document.getElementById('inspTags').value.split(',').map(t => t.trim()).filter(Boolean);
+      art.isPublic = document.getElementById('inspIsPublic').checked;
+      art.notes = document.getElementById('inspNotes').value.trim();
+      art.software = Array.from(document.querySelectorAll('input[name="inspSw"]:checked')).map(el => el.value);
+
+      saveData();
+      closeInspectorModal();
+      refreshAllViews();
+      showToast('บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว');
+    }
+
+    function promptDeleteArtwork() {
+      document.getElementById('deleteConfirmWrapper').innerHTML = `
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs font-semibold text-rose-500">ยืนยันลบ?</span>
+          <button type="button" onclick="confirmDeleteArtwork()" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-500 text-white hover:bg-rose-600">ลบทันที</button>
+        </div>
+      `;
+    }
+
+    function confirmDeleteArtwork() {
+      if (!state.inspectorArtworkId) return;
+      if (state.activeTimerArtworkId === state.inspectorArtworkId) {
+        state.activeTimerArtworkId = null;
+        updateHeaderTimerUI();
+      }
+      state.artworks = state.artworks.filter(a => a.id !== state.inspectorArtworkId);
+      saveData();
+      closeInspectorModal();
+      refreshAllViews();
+      showToast('ลบชิ้นงานออกจากระบบแล้ว');
+    }
+
+    // -------------------- 13. MODULE C: PUBLIC PORTFOLIO PREVIEW --------------------
+    function renderPortfolioView() {
+      const publicArts = state.artworks.filter(a => a.isPublic);
+      const categories = ['ALL', ...new Set(publicArts.map(a => a.category))];
+
+      const pillsContainer = document.getElementById('portfolioCategoryPills');
+      pillsContainer.innerHTML = categories.map(cat => {
+        const active = state.portfolioCategory === cat;
+        return `
+          <button onclick="selectPortfolioCategory('${cat}')" class="px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+            active
+              ? 'bg-studio-violet text-white shadow-md shadow-studio-violet/25'
+              : 'bg-white dark:bg-obsidian-800 border border-slate-200 dark:border-obsidian-700 hover:border-studio-violet/50'
+          }">
+            ${cat === 'ALL' ? 'ทั้งหมด (All Works)' : escapeHtml(cat)}
+          </button>
+        `;
+      }).join('');
+
+      const filtered = state.portfolioCategory === 'ALL'
+        ? publicArts
+        : publicArts.filter(a => a.category === state.portfolioCategory);
+
+      document.getElementById('portfolioCountText').textContent = `แสดงผลงานสาธารณะ ${filtered.length} ชิ้น`;
+
+      const grid = document.getElementById('portfolioGrid');
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-16 text-center rounded-3xl bg-white dark:bg-obsidian-800 border border-dashed border-slate-300 dark:border-obsidian-700">
+            <p class="text-sm font-semibold">ยังไม่มีผลงานที่เปิดเป็น Public ในหมวดหมู่นี้</p>
+            <p class="text-xs text-slate-500 mt-1">กลับไปที่โหมด Workspace แล้วเปิดสวิตช์ Public บนการ์ดผลงานที่ต้องการโชว์</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(art => {
+        const latestVer = art.versions[art.versions.length - 1];
+        const img = latestVer ? latestVer.image : '';
+        return `
+          <div onclick="openPortfolioLightbox('${art.id}')" class="group rounded-3xl overflow-hidden bg-white dark:bg-obsidian-800 border border-slate-200/80 dark:border-obsidian-700 hover:border-studio-violet/60 shadow-sm hover:shadow-2xl transition-all cursor-pointer">
+            <div class="relative aspect-[16/10] bg-obsidian-950 overflow-hidden">
+              <img src="${img}" alt="${escapeHtml(art.title)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              ${art.versions.length > 1 ? `
+                <span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/70 text-white backdrop-blur-md">
+                  +${art.versions.length} WIP Steps
+                </span>
+              ` : ''}
+            </div>
+            <div class="p-5">
+              <div class="flex items-center justify-between text-xs text-studio-violet font-semibold mb-1">
+                <span>${escapeHtml(art.project)}</span>
+                <span class="text-slate-500 dark:text-slate-400 font-normal">${escapeHtml(art.category)}</span>
+              </div>
+              <h3 class="text-base font-bold group-hover:text-studio-violet transition-colors">${escapeHtml(art.title)}</h3>
+              <div class="flex flex-wrap gap-1.5 mt-3">
+                ${(art.software || []).map(sw => `
+                  <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-obsidian-750 text-slate-600 dark:text-slate-300">${escapeHtml(sw)}</span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectPortfolioCategory(cat) {
+      state.portfolioCategory = cat;
+      renderPortfolioView();
+    }
+
+    function openPortfolioLightbox(id) {
+      const art = state.artworks.find(a => a.id === id);
+      if (!art) return;
+
+      document.getElementById('lbCategory').textContent = art.category;
+      document.getElementById('lbTitle').textContent = art.title;
+      document.getElementById('lbProject').textContent = art.project;
+      document.getElementById('lbNotes').textContent = art.notes || '';
+
+      const latestIdx = art.versions.length - 1;
+      document.getElementById('lbActiveImg').src = art.versions[latestIdx].image;
+
+      const wipSection = document.getElementById('lbWipSection');
+      const wipButtons = document.getElementById('lbWipButtons');
+
+      if (art.versions.length > 1) {
+        wipSection.classList.remove('hidden');
+        wipButtons.innerHTML = art.versions.map((v, idx) => `
+          <button onclick="switchLightboxVersion('${art.id}', ${idx})" class="px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-obsidian-700 bg-white dark:bg-obsidian-800 hover:border-studio-violet transition-all">
+            Step ${idx + 1}: ${escapeHtml(v.label)}
+          </button>
+        `).join('');
+      } else {
+        wipSection.classList.add('hidden');
+      }
+
+      document.getElementById('lbSoftwareBadges').innerHTML = (art.software || []).map(sw => `
+        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-obsidian-750">${escapeHtml(sw)}</span>
+      `).join('');
+
+      document.getElementById('lbPalette').innerHTML = (art.palette || []).map(hex => `
+        <span class="w-5 h-5 rounded-full border border-white/40 shadow-sm" style="background-color: ${hex}" title="${hex}"></span>
+      `).join('');
+
+      document.getElementById('portfolioLightboxModal').classList.remove('hidden');
+    }
+
+    function switchLightboxVersion(artId, idx) {
+      const art = state.artworks.find(a => a.id === artId);
+      if (!art || !art.versions[idx]) return;
+      document.getElementById('lbActiveImg').src = art.versions[idx].image;
+    }
+
+    function closePortfolioLightbox() {
+      document.getElementById('portfolioLightboxModal').classList.add('hidden');
+    }
+
+    function copyPortfolioLink() {
+      copyTextToClipboard(window.location.href, 'คัดลอกลิงก์หน้า Public Portfolio แล้ว');
+    }
+
+    // -------------------- 14. MODULE D: BACKUP, EXPORT & IMPORT JSON --------------------
+    function openBackupModal() {
+      const jsonStr = JSON.stringify(state.artworks);
+      const bytesUsed = jsonStr.length * 2;
+      const kbUsed = Math.round(bytesUsed / 1024);
+      const mbUsed = (bytesUsed / (1024 * 1024)).toFixed(2);
+
+      const engineLabel = document.getElementById('storageEngineLabel');
+      const usageText = document.getElementById('storageUsageText');
+      const usageBar = document.getElementById('storageUsageBar');
+
+      if (state.storageBackend === 'indexeddb') {
+        engineLabel.textContent = 'ฐานข้อมูลเบราว์เซอร์ (IndexedDB Persistent)';
+        usageText.textContent = `${state.artworks.length} ผลงาน (${mbUsed} MB)`;
+        usageBar.className = 'h-full bg-studio-emerald rounded-full transition-all';
+        usageBar.style.width = `${Math.min(100, Math.max(8, Math.round((kbUsed / 51200) * 100)))}%`;
+      } else if (state.storageBackend === 'localstorage') {
+        engineLabel.textContent = 'พื้นที่สำรอง (LocalStorage)';
+        usageText.textContent = `${kbUsed.toLocaleString()} KB / 5,120 KB`;
+        usageBar.className = 'h-full bg-studio-violet rounded-full transition-all';
+        usageBar.style.width = `${Math.min(100, Math.max(5, Math.round((kbUsed / 5120) * 100)))}%`;
+      } else {
+        engineLabel.textContent = 'โหมดชั่วคราว (Sandbox Memory — ไม่บันทึกข้ามรีเฟรช)';
+        usageText.textContent = `${kbUsed.toLocaleString()} KB (ชั่วคราว)`;
+        usageBar.className = 'h-full bg-amber-500 rounded-full transition-all';
+        usageBar.style.width = '100%';
+      }
+
+      document.getElementById('resetDataWrapper').innerHTML = `
+        <button onclick="promptResetSampleData()" class="w-full px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-500 border border-rose-500/30 hover:bg-rose-500/10 transition-colors">
+          Reset Demo — ดึงข้อมูลตัวอย่างเริ่มต้นกลับมาใหม่
+        </button>
+      `;
+
+      document.getElementById('backupModal').classList.remove('hidden');
+    }
+
+    function closeBackupModal() {
+      document.getElementById('backupModal').classList.add('hidden');
+    }
+
+    function exportDataJson() {
+      const payload = {
+        app: 'ArtFlow Studio',
+        exportedAt: new Date().toISOString(),
+        artworks: state.artworks
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.href = url;
+      a.download = `artflow-studio-backup-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('ดาวน์โหลดไฟล์สำรองข้อมูล JSON สำเร็จ');
+    }
+
+    function importDataJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const importedList = Array.isArray(parsed) ? parsed : parsed.artworks;
+          if (!Array.isArray(importedList)) throw new Error('Invalid format');
+          state.artworks = importedList;
+          await saveData();
+          closeBackupModal();
+          refreshAllViews();
+          showToast(`นำเข้าข้อมูลสำเร็จ (${importedList.length} ผลงาน)`);
+        } catch (err) {
+          showToast('รูปแบบไฟล์ JSON ไม่ถูกต้อง', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function promptResetSampleData() {
+      document.getElementById('resetDataWrapper').innerHTML = `
+        <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30">
+          <span class="text-xs font-semibold text-rose-500">ยืนยันล้างข้อมูลปัจจุบันและโหลด Demo?</span>
+          <button onclick="confirmResetSampleData()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-500 text-white hover:bg-rose-600">ยืนยัน Reset Demo</button>
+        </div>
+      `;
+    }
+
+    async function confirmResetSampleData() {
+      state.activeTimerArtworkId = null;
+      updateHeaderTimerUI();
+      state.artworks = createStarterArtworks();
+      await dbSet(INIT_FLAG_KEY, true);
+      await saveData();
+      closeBackupModal();
+      refreshAllViews();
+      showToast('รีเซ็ตข้อมูลกลับเป็นชุดตัวอย่างเริ่มต้นแล้ว');
+    }
+
+    // -------------------- 15. UTILITIES & CLIPBOARD --------------------
+    function copyTextToClipboard(text, successMessage) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMessage || 'คัดลอกเรียบร้อยแล้ว');
+      } catch (err) {
+        showToast('ไม่สามารถคัดลอกข้อความได้', 'error');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bgClass = type === 'error'
+        ? 'bg-rose-600 text-white'
+        : 'bg-obsidian-800 dark:bg-white text-white dark:text-slate-900 border border-slate-700 dark:border-slate-200';
+
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 transition-all duration-300 transform translate-y-2 opacity-0 ${bgClass}`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${type === 'error' ? 'bg-white' : 'bg-studio-emerald'}"></span>
+        <span>${escapeHtml(message)}</span>
+      `;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    function getStageBadgeStyle(stage) {
+      if (stage === 'Compositing / Done') return 'bg-studio-emerald/90 text-white';
+      if (stage === 'Color / Shading') return 'bg-studio-violet/90 text-white';
+      if (stage === 'Line / Modeling') return 'bg-cyan-600/90 text-white';
+      if (stage === 'Sketch / Blocking') return 'bg-amber-500/90 text-slate-950';
+      return 'bg-slate-800/85 text-slate-100';
+    }
+
+    function getDeadlineStatus(deadlineStr, isDone) {
+      if (!deadlineStr) return { text: '', badgeClass: '' };
+      if (isDone) {
+        return { text: `✓ ${deadlineStr.slice(5)}`, badgeClass: 'bg-studio-emerald/15 text-studio-emerald' };
+      }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const due = new Date(deadlineStr + 'T00:00:00');
+      const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        return { text: `เลยกำหนด ${Math.abs(diffDays)}d`, badgeClass: 'bg-rose-500/15 text-rose-500' };
+      }
+      if (diffDays <= 3) {
+        return { text: diffDays === 0 ? 'ส่งวันนี้!' : `อีก ${diffDays} วัน`, badgeClass: 'bg-amber-500/15 text-amber-500' };
+      }
+      return { text: deadlineStr.slice(5), badgeClass: 'bg-slate-100 dark:bg-obsidian-750 text-slate-500 dark:text-slate-400' };
+    }
+
+    function formatDurationHMS(totalSeconds) {
+      const hrs = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+      return [hrs, mins, secs].map(v => String(v).padStart(2, '0')).join(':');
+    }
+
+    function formatDurationShort(totalSeconds) {
+      const hrs = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      return `${hrs}h ${String(mins).padStart(2, '0')}m`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
